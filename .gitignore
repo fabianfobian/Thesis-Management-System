@@ -1,0 +1,26 @@
+# root .gitignore
+# ---- Python / Django ----
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.py[cod]
+*.sqlite3
+backend/media/
+backend/staticfiles/
+.env
+**/.env
+**/.env.local
+
+# ---- Node / Next.js ----
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+npm-debug.log*
+yarn-error.log*
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

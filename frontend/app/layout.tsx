@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { cacheLife } from "next/cache";
 import "./globals.css";
 
 const display = Playfair_Display({
@@ -14,7 +15,24 @@ export const metadata: Metadata = {
     "Official thesis and dissertation progress tracker for Pan Africa Christian University.",
 };
 
-export default function RootLayout({
+/**
+ * Returns the current year for the copyright footer.
+ *
+ * Why this exists: Next.js refuses to prerender `new Date()` directly
+ * because the value would be baked into the static shell at build time.
+ * Wrapping the read in a `'use cache'` function with `cacheLife('max')`
+ * tells Next.js "this value is effectively stable — cache it forever
+ * until the year changes." That satisfies the validator and produces
+ * the same footer everyone expects.
+ */
+
+async function getCopyrightYear(): Promise<number> {
+  "use cache";
+  cacheLife("max");
+  return new Date().getFullYear();
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
