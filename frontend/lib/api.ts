@@ -54,6 +54,7 @@ export type Chapter = {
   title: string;
   content: string;
   document: string | null;
+  document_url: string | null;
   status: ChapterStatus;
   status_display: string;
   comments: Comment[];
@@ -101,12 +102,21 @@ function readCookie(name: string): string | null {
  */
 let cachedCsrfToken: string | null = null;
 
-export async function ensureCsrf(): Promise<string> {
-  if (cachedCsrfToken) return cachedCsrfToken;
+/**
+ * Ensures a valid CSRF token is available by fetching it directly from Django.
+ * 
+ * We do NOT cache this in memory, because the browser's underlying `csrftoken` 
+ * cookie can rotate (e.g., after login/logout). Fetching it fresh ensures the 
+ * header always matches the cookie Django expects.
+ */
 
+
+export async function ensureCsrf(): Promise<string> {
   const res = await fetch(`${API_URL}/auth/csrf/`, {
     credentials: "include",
+    cache: "no-store",
   });
+  
   if (!res.ok) {
     throw new Error(`Failed to fetch CSRF token (HTTP ${res.status}).`);
   }
@@ -116,8 +126,7 @@ export async function ensureCsrf(): Promise<string> {
     throw new Error("Backend did not return a CSRF token.");
   }
 
-  cachedCsrfToken = data.csrfToken;
-  return cachedCsrfToken;
+  return data.csrfToken;
 }
 
 // ---------------------------------------------------------------------------
@@ -196,7 +205,9 @@ export const auth = {
 export const thesesApi = {
   list: (headers?: Record<string, string>) => 
     request<{ results: Thesis[]; count: number }>("/theses/", { headers }),
-  retrieve: (id: number) => request<Thesis>(`/theses/${id}/`),
+  retrieve: (id: number, headers?: Record<string, string>) => 
+    request<Thesis>(`/theses/${id}/`,{headers}),
+  
   setStatus: (id: number, status: ThesisStatus) =>
     request<Thesis>(`/theses/${id}/set-status/`, {
       method: "POST",

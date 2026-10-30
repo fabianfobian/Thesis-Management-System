@@ -78,13 +78,12 @@ class CommentSerializer(serializers.ModelSerializer):
 class ChapterSerializer(serializers.ModelSerializer):
     """
     A chapter belonging to a thesis.
-
-    Includes the full comment thread read-only so a detail view renders in
-    a single request. Comment creation goes through its own endpoint.
     """
-
     comments = CommentSerializer(many=True, read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    
+    # NEW: Ensure the file URL is absolute (includes http://localhost:8000)
+    document_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Chapter
@@ -95,6 +94,7 @@ class ChapterSerializer(serializers.ModelSerializer):
             "title",
             "content",
             "document",
+            "document_url",  # <-- Added
             "status",
             "status_display",
             "comments",
@@ -103,6 +103,13 @@ class ChapterSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "submitted_at", "updated_at"]
 
+    def get_document_url(self, obj: Chapter) -> str | None:
+        if not obj.document:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.document.url)
+        return obj.document.url
 
 # ---------------------------------------------------------------------------
 # Theses
