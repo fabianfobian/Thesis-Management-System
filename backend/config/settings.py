@@ -213,7 +213,17 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-
+# ---------------------------------------------------------------------------
+# CSRF / Session cookies
+# ---------------------------------------------------------------------------
+# In development, frontend (:3000) and backend (:8000) are different origins.
+# `Samesite=Lax` allows the cookie to be sent on top-level navigation but
+# not on cross-site fetch — which is exactly what we want. In production
+# (same parent domain), this stays correct.
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_HTTPONLY = True       # JS can't read sessionid
+CSRF_COOKIE_HTTPONLY = False         # JS MUST read csrftoken to echo it
 
 
 # Email

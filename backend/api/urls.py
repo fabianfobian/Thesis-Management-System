@@ -11,9 +11,11 @@ Using DRF's DefaultRouter gives us, per registered viewset:
 
 Plus custom @action endpoints, like /theses/{id}/set-status/.
 """
+from django.urls import path
 
 from rest_framework.routers import DefaultRouter
 
+from .auth_views import CsrfView, LoginView, LogoutView
 from .views import ChapterViewSet, CommentViewSet, MeViewSet, ThesisViewSet
 
 router = DefaultRouter()
@@ -22,4 +24,9 @@ router.register(r"chapters", ChapterViewSet, basename="chapter")
 router.register(r"comments", CommentViewSet, basename="comment")
 router.register(r"me",       MeViewSet,      basename="me")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path("auth/csrf/",   CsrfView.as_view(),   name="auth-csrf"),
+    path("auth/login/",  LoginView.as_view(),  name="auth-login"),
+    path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
+    *router.urls,
+]
