@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { auth, thesesApi, ApiError } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import LogoutButton from "@/components/LogoutButton";
@@ -7,15 +9,35 @@ import LogoutButton from "@/components/LogoutButton";
 /**
  * Dashboard — the post-login landing page.
  *
- * Server Component: we call the API with the incoming request's cookies
- * (next/fetch forwards them automatically for same-origin-style calls
- * when `credentials: "include"` is set and the request comes from the
- * browser). If not authenticated, redirect to /login.
+ * We use React Suspense to isolate the data fetching. Because the user's
+ * session cookie is required, this data is inherently dynamic. In Next.js 16
+ * with cacheComponents, dynamic data must be wrapped in a Suspense boundary
+ * so the static shell (header/footer) can render instantly while the user
+ * data streams in.
  */
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+// The actual data-fetching component
+async function DashboardContent() { 
+  // Get cookies from the incoming browser request
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+    
+  console.log("🍪 Forwarding cookies to Django:", cookieHeader);
   let user;
   try {
-    user = await auth.me();
+    // This fetch happens on the server. It relies on the cookies passed from the client.
+    // Pass the cookies to Django
+    user = await auth.me({ Cookie: cookieHeader });
   } catch (err) {
     if (err instanceof ApiError && err.status === 403) {
       redirect("/login");
@@ -23,7 +45,7 @@ export default async function DashboardPage() {
     throw err;
   }
 
-  const { results: theses } = await thesesApi.list();
+  const { results: theses } = await thesesApi.list({ Cookie: cookieHeader });
 
   return (
     <div className="space-y-6">
@@ -77,6 +99,29 @@ export default async function DashboardPage() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/**
+ * Fallback UI shown while the server fetches the user session and theses.
+ * It roughly mimics the final layout to prevent jarring layout shifts.
+ */
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex items-end justify-between">
+        <div className="space-y-2">
+          <div className="h-4 w-32 bg-pac-navy/10 rounded"></div>
+          <div className="h-8 w-48 bg-pac-navy/20 rounded"></div>
+        </div>
+        <div className="h-9 w-24 bg-pac-navy/10 rounded"></div>
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-24 rounded-lg border border-pac-navy/10 bg-white/50"></div>
+        ))}
+      </div>
     </div>
   );
 }

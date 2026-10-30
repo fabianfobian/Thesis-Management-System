@@ -28,10 +28,18 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        setError("Invalid username or password.");
+      // Surface the actual reason so we're not debugging blind.
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          setError("Invalid username or password.");
+        } else if (err.status === 403) {
+          setError("Session or CSRF error. Try clearing cookies and reloading.");
+        } else {
+          setError(`Login failed (HTTP ${err.status}): ${err.message}`);
+        }
       } else {
-        setError("Login failed. Please try again.");
+        // This will catch our "Failed to fetch CSRF token" error
+        setError(`Error: ${(err as Error).message}`);
       }
     } finally {
       setLoading(false);

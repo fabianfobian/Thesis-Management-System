@@ -225,6 +225,9 @@ CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_HTTPONLY = True       # JS can't read sessionid
 CSRF_COOKIE_HTTPONLY = False         # JS MUST read csrftoken to echo it
 
+# In production, uncomment these:
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

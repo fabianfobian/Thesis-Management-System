@@ -37,6 +37,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const copyrightYear = await getCopyrightYear();
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`}>
       <body className="min-h-screen flex flex-col bg-pac-cream text-pac-navy font-sans">
@@ -64,7 +65,7 @@ export default async function RootLayout({
         <footer className="bg-pac-navy text-pac-cream/80 text-sm">
           <div className="mx-auto max-w-5xl px-6 py-6 flex flex-col sm:flex-row justify-between gap-2">
             <p>
-              © {new Date().getFullYear()} Pan Africa Christian University. All
+              © {copyrightYear} Pan Africa Christian University. All
               rights reserved.
             </p>
             <p className="text-pac-goldLight">

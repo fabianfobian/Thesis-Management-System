@@ -86,15 +86,38 @@ function readCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-/** Ensure a `csrftoken` cookie exists (calls the backend if needed). */
+/**
+ * Ensures a valid CSRF token is available.
+ *
+ * Strategy:
+ *   1. If a token is already cached in memory, return it.
+ *   2. Otherwise, fetch /api/auth/csrf/ and read the token from the
+ *      response body — NOT from document.cookie.
+ *
+ * Reading from the response body is more robust than reading the cookie:
+ * it works even if the browser restricts cookie exposure (HttpOnly,
+ * SameSite, cross-site), which is exactly the situation with the
+ * Next.js (:3000) ↔ Django (:8000) dev split.
+ */
+let cachedCsrfToken: string | null = null;
+
 export async function ensureCsrf(): Promise<string> {
-  let token = readCookie("csrftoken");
-  if (!token) {
-    await fetch(`${API_URL}/auth/csrf/`, { credentials: "include" });
-    token = readCookie("csrftoken");
+  if (cachedCsrfToken) return cachedCsrfToken;
+
+  const res = await fetch(`${API_URL}/auth/csrf/`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch CSRF token (HTTP ${res.status}).`);
   }
-  if (!token) throw new Error("Unable to obtain CSRF token.");
-  return token;
+
+  const data: { csrfToken?: string } = await res.json();
+  if (!data.csrfToken) {
+    throw new Error("Backend did not return a CSRF token.");
+  }
+
+  cachedCsrfToken = data.csrfToken;
+  return cachedCsrfToken;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,6 +128,7 @@ type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   /** Set true for state-changing verbs so we include the CSRF header. */
   csrf?: boolean;
+  headers?: Record<string, string>; // Updates the type to explicitly allow a Cookie header
 };
 
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
@@ -116,6 +140,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     ...opts,
     headers,
     credentials: "include",
+    cache:"no-store",
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
 
@@ -160,8 +185,8 @@ export const auth = {
       method: "POST",
       csrf: true,
     }),
-
-  me: () => request<User>("/me/"),
+ // Allow passing headers (like cookies) from Server Components
+  me: (headers?: Record<string, string>) => request<User>("/me/", {headers}),
 };
 
 // ---------------------------------------------------------------------------
@@ -169,7 +194,8 @@ export const auth = {
 // ---------------------------------------------------------------------------
 
 export const thesesApi = {
-  list: () => request<{ results: Thesis[]; count: number }>("/theses/"),
+  list: (headers?: Record<string, string>) => 
+    request<{ results: Thesis[]; count: number }>("/theses/", { headers }),
   retrieve: (id: number) => request<Thesis>(`/theses/${id}/`),
   setStatus: (id: number, status: ThesisStatus) =>
     request<Thesis>(`/theses/${id}/set-status/`, {
