@@ -16,6 +16,7 @@ from django.db.models import Prefetch
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import Chapter, Comment, Thesis, User
 from .permissions import IsThesisParticipant
@@ -24,6 +25,7 @@ from .serializers import (
     CommentSerializer,
     ThesisSerializer,
     UserSerializer,
+    ChapterVersionSerializer,
 )
 
 
@@ -95,7 +97,7 @@ class ThesisViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-    @action(detail=True, methods=["post"], url_path="set-status")
+    @action(detail=True, methods=["post"], url_path="set-status", parser_classes=[MultiPartParser, FormParser])
     def set_status(self, request, pk=None):
         """
         Move a thesis through its workflow.
@@ -175,7 +177,40 @@ class ChapterViewSet(viewsets.ModelViewSet):
             )
 
         serializer.save()
+    @action(
+        detail=True, 
+        methods=["post"], 
+        url_path="upload-version", 
+        parser_classes=[MultiPartParser, FormParser],
+        permission_classes=[permissions.IsAuthenticated]
+    )
+    def upload_version(self, request, pk=None):
+        """Upload a new version of a chapter file."""
+        from .models import ChapterVersion
+        from .serializers import ChapterVersionSerializer
 
+        chapter = self.get_object()
+                
+        if request.user != chapter.thesis.student:
+            return Response({"detail": "Only the student can upload files."}, status=403)
+
+        file_obj = request.FILES.get("document")
+        if not file_obj:
+            return Response({"detail": "No file provided."}, status=400)
+
+        latest = chapter.versions.first()
+        next_version = (latest.version_number + 1) if latest else 1
+
+        version = ChapterVersion.objects.create(
+            chapter=chapter,
+            version_number=next_version,
+            document=file_obj,
+        )
+        
+        chapter.status = Chapter.Status.SUBMITTED
+        chapter.save()
+
+        return Response(ChapterVersionSerializer(version).data, status=201)
 
 # ---------------------------------------------------------------------------
 # Comments

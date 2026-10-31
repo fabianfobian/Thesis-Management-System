@@ -5,6 +5,8 @@ import { cookies } from "next/headers";
 import { auth, thesesApi, ApiError } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import StatusSelect from "@/components/StatusSelect";
+import UploadRevision from "@/components/UploadRevision";
+
 
 export default function ThesisDetailPage({
   params,
@@ -108,6 +110,7 @@ async function ThesisContent({ params }: { params: Promise<{ id: string }> }) {
                 </div>
 
                 {/* Chapter Body */}
+                {/* Chapter Body */}
                 <div className="p-4 sm:p-6 space-y-4">
                   {chapter.content && (
                     <p className="text-sm text-pac-navy/80 whitespace-pre-wrap">
@@ -115,15 +118,40 @@ async function ThesisContent({ params }: { params: Promise<{ id: string }> }) {
                     </p>
                   )}
                   
-                  {chapter.document_url && (
-                    <a 
-                      href={chapter.document_url} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-pac-navy font-medium hover:text-pac-gold"
-                    >
-                      📄 Download Document
-                    </a>
+                  {/* File Versions List */}
+                  <div className="mt-4 border-t border-pac-navy/10 pt-4">
+                    <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-3">
+                      Submitted Files
+                    </h4>
+                    {chapter.versions.length === 0 ? (
+                      <p className="text-sm text-pac-navy/50 italic">No files uploaded yet.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {chapter.versions.map((v) => (
+                          <li key={v.id} className="flex items-center justify-between text-sm bg-pac-cream/30 p-2 rounded">
+                            <span className="font-medium text-pac-navy">
+                              Version {v.version_number}
+                            </span>
+                            <span className="text-pac-navy/50 text-xs">
+                              {new Date(v.uploaded_at).toLocaleDateString()}
+                            </span>
+                            <a 
+                              href={v.document_url} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-pac-navy font-medium hover:text-pac-gold underline decoration-pac-gold/30"
+                            >
+                              Download
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Upload Form (Student Only) */}
+                  {user.role === "student" && (
+                    <UploadRevision chapterId={chapter.id} />
                   )}
 
                   {/* Comments thread */}

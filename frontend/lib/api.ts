@@ -47,12 +47,21 @@ export type Comment = {
   created_at: string;
 };
 
+export type ChapterVersion = {
+  id: number;
+  version_number: number;
+  document: string;
+  document_url: string;
+  uploaded_at: string;
+};
+
 export type Chapter = {
   id: number;
   thesis: number;
   number: number;
   title: string;
   content: string;
+  versions: ChapterVersion[];
   document: string | null;
   document_url: string | null;
   status: ChapterStatus;
@@ -214,6 +223,40 @@ export const thesesApi = {
       body: { status },
       csrf: true,
     }),
+
+    
+  uploadVersion: async (chapterId: number, file: File) => {
+    const formData = new FormData();
+    formData.append("document", file);
+
+    const token = await ensureCsrf();
+    const res = await fetch(`${API_URL}/chapters/${chapterId}/upload-version/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": token,
+        // Note: Do NOT set Content-Type here. The browser sets it automatically
+        // to multipart/form-data with the correct boundary.
+      },
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      // Safely try to parse JSON, fall back to text if it's HTML
+      let errorMessage = "Upload failed";
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        errorMessage = data.detail || errorMessage;
+      } catch {
+        // If it's a 404/500, it usually means the URL is wrong or the server crashed
+        console.error("Server returned HTML error:", text.substring(0, 200));
+        errorMessage = `Server error (${res.status}). Check Django console.`;
+      }
+      throw new ApiError(res.status, errorMessage);
+    }
+    return res.json() as Promise<ChapterVersion>;
+  },
 };
 
 export const commentsApi = {

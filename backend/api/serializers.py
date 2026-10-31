@@ -16,7 +16,7 @@ Conventions
 
 from rest_framework import serializers
 
-from .models import Chapter, Comment, Thesis, User
+from .models import Chapter, Comment, Thesis, User, ChapterVersion
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +72,25 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 # ---------------------------------------------------------------------------
+# Chapter Version Serializer MUST be defined before ChapterSerializer
+# ---------------------------------------------------------------------------
+class ChapterVersionSerializer(serializers.ModelSerializer):
+    document_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChapterVersion
+        fields = ["id", "version_number", "document", "document_url", "uploaded_at"]
+        read_only_fields = ["id", "version_number", "uploaded_at"]
+
+    def get_document_url(self, obj):
+        if not obj.document:
+            return None
+        request = self.context.get("request")
+        return request.build_absolute_uri(obj.document.url) if request else obj.document.url
+
+
+
+# ---------------------------------------------------------------------------
 # Chapters
 # ---------------------------------------------------------------------------
 
@@ -83,8 +102,8 @@ class ChapterSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     
     # NEW: Ensure the file URL is absolute (includes http://localhost:8000)
-    document_url = serializers.SerializerMethodField()
-
+    #document_url = serializers.SerializerMethodField()
+    versions = ChapterVersionSerializer(many=True, read_only=True)
     class Meta:
         model = Chapter
         fields = [
@@ -93,8 +112,9 @@ class ChapterSerializer(serializers.ModelSerializer):
             "number",
             "title",
             "content",
-            "document",
-            "document_url",  # <-- Added
+            #"document",
+            #"document_url", 
+            "versions",
             "status",
             "status_display",
             "comments",

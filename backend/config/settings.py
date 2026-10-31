@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     # third party
     'rest_framework',
     'corsheaders',
+    'storages',
     
     #local
     'api',
@@ -168,12 +169,38 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR/ "staticfiles"
-
-MEDIA_URL ="/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
 DEFAULT_AUTO_FIELD ="django.db.models.BigAutoField"
 
+# ---------------------------------------------------------------------------
+# Filebase Object Storage (S3-Compatible)
+# ---------------------------------------------------------------------------
+
+# Credentials loaded from .env
+AWS_ACCESS_KEY_ID = os.environ.get("FILEBASE_KEY")
+AWS_SECRET_ACCESS_KEY = os.environ.get("FILEBASE_SECRET")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("FILEBASE_BUCKET_NAME")
+
+# Filebase specific endpoint settings (using the .io endpoint recommended for Django)
+AWS_S3_ENDPOINT_URL = "https://s3.filebase.io"
+AWS_S3_REGION_NAME = "auto"
+AWS_S3_ADDRESSING_STYLE = "path"
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+
+# Prevent files from overwriting each other if they have the same name
+AWS_S3_FILE_OVERWRITE = False
+
+# Configure Django to use Filebase for uploaded media files
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+# The base URL for accessing files (needed for document.document_url)
+MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.filebase.io/"
 
 #--------------------------------------------------------------
 # Django Rest Framework

@@ -152,13 +152,7 @@ class Chapter(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField(blank=True)
 
-    document = models.FileField(
-        upload_to="chapters/%Y/%m/",
-        blank=True,
-        null=True,
-        validators=[FileExtensionValidator(allowed_extensions=["pdf", "doc", "docx"])],
-    )
-
+    
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -175,6 +169,29 @@ class Chapter(models.Model):
     def __str__(self) -> str:
         return f"Ch. {self.number}: {self.title}"
 
+# ---------------------------------------------------------------------------
+# Chapter Versioning
+# ---------------------------------------------------------------------------
+
+class ChapterVersion(models.Model):
+    """
+    Represents a specific uploaded file version for a chapter.
+    Allows supervisors to see revision history.
+    """
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="versions")
+    version_number = models.PositiveIntegerField()
+    document = models.FileField(
+        upload_to="chapters/%Y/%m/",
+        validators=[FileExtensionValidator(allowed_extensions=["pdf", "doc", "docx"])]
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("chapter", "version_number")
+        ordering = ["-version_number"]
+
+    def __str__(self):
+        return f"{self.chapter} - v{self.version_number}"
 
 # ---------------------------------------------------------------------------
 # Comment
