@@ -60,7 +60,7 @@ INSTALLED_APPS = [
     'storages',
     
     #local
-    'api',
+    'api.apps.ApiConfig',
 ]
 
 #-----------------------------------------------------------------

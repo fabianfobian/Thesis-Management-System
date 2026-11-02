@@ -16,8 +16,8 @@ Conventions
 
 from rest_framework import serializers
 
-from .models import Chapter, Comment, Thesis, User, ChapterVersion
-
+from .models import Chapter, Comment, Thesis, User, ChapterVersion, Notification
+#from .models import Notification
 
 # ---------------------------------------------------------------------------
 # Users
@@ -203,3 +203,15 @@ class ThesisSerializer(serializers.ModelSerializer):
                     {"student_id": "This student already has an active thesis."}
                 )
         return attrs
+
+
+# ---------------------------------------------------------------------------
+# Notifications
+# ---------------------------------------------------------------------------
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ["id", "message", "link", "is_read", "created_at"]
+        read_only_fields = fields
+

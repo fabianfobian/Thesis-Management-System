@@ -223,3 +223,29 @@ class Comment(models.Model):
 
     def __str__(self) -> str:
         return f"Comment by {self.author} on {self.chapter}"
+# ---------------------------------------------------------------------------
+# Notifications
+# ---------------------------------------------------------------------------
+
+class Notification(models.Model):
+    """
+    In-app notifications for users.
+    Triggered automatically via Django signals when events occur 
+    (e.g., a supervisor leaves a comment).
+    """
+    recipient = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name="notifications"
+    )
+    # The URL the user should go to when clicking the notification
+    link = models.CharField(max_length=255, blank=True)
+    message = models.CharField(max_length=255)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Notification for {self.recipient}: {self.message}"

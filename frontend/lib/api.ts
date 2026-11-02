@@ -85,6 +85,16 @@ export type Thesis = {
   updated_at: string;
 };
 
+export type Notification = {
+  id: number;
+  message: string;
+  link: string;
+  is_read: boolean;
+  created_at: string;
+};
+
+
+
 // ---------------------------------------------------------------------------
 // CSRF helper — browser only
 // ---------------------------------------------------------------------------
@@ -267,4 +277,15 @@ export const commentsApi = {
       csrf: true, // Handles the CSRF token
     });
   },
+};
+
+export const notificationsApi = {
+  list: (headers?: Record<string, string>) => 
+    request<{ results: Notification[]; count: number }>("/notifications/", { headers }),
+    
+  markAllRead: () =>
+    request<{ status: string }>("/notifications/mark-all-read/", {
+      method: "PATCH",
+      csrf: true,
+    }),
 };

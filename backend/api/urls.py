@@ -17,11 +17,13 @@ from rest_framework.routers import DefaultRouter
 
 from .auth_views import CsrfView, LoginView, LogoutView
 from .views import ChapterViewSet, CommentViewSet, MeViewSet, ThesisViewSet
+from .views import ChapterViewSet, CommentViewSet, MeViewSet, ThesisViewSet, NotificationViewSet
 
 router = DefaultRouter()
 router.register(r"theses",   ThesisViewSet,  basename="thesis")
 router.register(r"chapters", ChapterViewSet, basename="chapter")
 router.register(r"comments", CommentViewSet, basename="comment")
+router.register(r"notifications", NotificationViewSet, basename="notification")
 router.register(r"me",       MeViewSet,      basename="me")
 
 urlpatterns = [

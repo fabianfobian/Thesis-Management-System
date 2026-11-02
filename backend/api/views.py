@@ -17,6 +17,8 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from .models import Notification
+from .serializers import NotificationSerializer
 
 from .models import Chapter, Comment, Thesis, User
 from .permissions import IsThesisParticipant
@@ -262,6 +264,33 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         serializer.save(author=user)
 
+#----------------------------------------------------------
+# Notification
+#-----------------------------------------------------------
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    Fetch and manage notifications for the logged-in user.
+    """
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["get", "patch", "head", "options"] # Allow GET and PATCH
+
+    def get_queryset(self):
+        # A user can only see their own notifications
+        return Notification.objects.filter(recipient=self.request.user)
+
+    @action(detail=True, methods=["patch"], url_path="mark-read")
+    def mark_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response(self.get_serializer(notification).data)
+
+    @action(detail=False, methods=["patch"], url_path="mark-all-read")
+    def mark_all_read(self, request):
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({"status": "all marked as read"})
 
 # ---------------------------------------------------------------------------
 # "Who am I" — used by the frontend after login
