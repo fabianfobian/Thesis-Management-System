@@ -6,7 +6,7 @@ import { auth, thesesApi, ApiError } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import StatusSelect from "@/components/StatusSelect";
 import UploadRevision from "@/components/UploadRevision";
-
+import CommentForm from "@/components/CommentForm"; // <-- Added Import
 
 export default function ThesisDetailPage({
   params,
@@ -110,7 +110,6 @@ async function ThesisContent({ params }: { params: Promise<{ id: string }> }) {
                 </div>
 
                 {/* Chapter Body */}
-                {/* Chapter Body */}
                 <div className="p-4 sm:p-6 space-y-4">
                   {chapter.content && (
                     <p className="text-sm text-pac-navy/80 whitespace-pre-wrap">
@@ -154,11 +153,16 @@ async function ThesisContent({ params }: { params: Promise<{ id: string }> }) {
                     <UploadRevision chapterId={chapter.id} />
                   )}
 
-                  {/* Comments thread */}
-                  {chapter.comments.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-pac-navy/10 space-y-3">
-                      <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider">Feedback</h4>
-                      {chapter.comments.map((comment) => (
+                  {/* Comments thread & Form */}
+                  <div className="mt-6 pt-4 border-t border-pac-navy/10 space-y-3">
+                    <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-3">
+                      Feedback
+                    </h4>
+                    
+                    {chapter.comments.length === 0 ? (
+                      <p className="text-sm text-pac-navy/50 italic">No feedback yet.</p>
+                    ) : (
+                      chapter.comments.map((comment) => (
                         <div key={comment.id} className="bg-pac-cream/50 rounded-md p-3 text-sm">
                           <div className="flex justify-between items-baseline mb-1">
                             <span className="font-semibold text-pac-navy">{comment.author.full_name}</span>
@@ -168,9 +172,14 @@ async function ThesisContent({ params }: { params: Promise<{ id: string }> }) {
                           </div>
                           <p className="text-pac-navy/80">{comment.body}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+
+                    {/* Comment form (Supervisor/Admin only) */}
+                    {(user.role === "supervisor" || user.role === "admin") && (
+                      <CommentForm chapterId={chapter.id} />
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

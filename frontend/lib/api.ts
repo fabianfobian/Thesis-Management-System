@@ -260,10 +260,11 @@ export const thesesApi = {
 };
 
 export const commentsApi = {
-  create: (chapterId: number, body: string) =>
-    request<Comment>("/comments/", {
+  create: async (chapterId: number, body: string) => {
+    return request<Comment>("/comments/", {
       method: "POST",
       body: { chapter: chapterId, body },
-      csrf: true,
-    }),
+      csrf: true, // Handles the CSRF token
+    });
+  },
 };
