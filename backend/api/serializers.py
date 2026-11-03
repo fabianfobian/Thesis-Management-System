@@ -165,6 +165,20 @@ class ThesisSerializer(serializers.ModelSerializer):
         allow_null=True,
     )
 
+    #  Read-only nested representations
+    co_supervisor = UserSerializer(read_only=True)
+    third_reader = UserSerializer(read_only=True)
+
+    #  Write-only IDs for updates
+    co_supervisor_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role=User.Role.SUPERVISOR),
+        source="co_supervisor", write_only=True, required=False, allow_null=True,
+    )
+    third_reader_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role=User.Role.SUPERVISOR),
+        source="third_reader", write_only=True, required=False, allow_null=True,
+    )
+
     class Meta:
         model = Thesis
         fields = [
@@ -178,6 +192,10 @@ class ThesisSerializer(serializers.ModelSerializer):
             "student_id",
             "supervisor",
             "supervisor_id",
+            "co_supervisor", 
+            "co_supervisor_id",
+            "third_reader", 
+            "third_reader_id",
             "chapters",
             "submitted_at",
             "updated_at",

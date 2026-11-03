@@ -103,7 +103,9 @@ class Command(BaseCommand):
             
             thesis = Thesis.objects.create(
                 student=student,
-                supervisor=supervisor,
+                supervisor=supervisors[i % len(supervisors)],
+                co_supervisor=supervisors[(i + 1) % len(supervisors)],
+                third_reader=supervisors[(i + 2) % len(supervisors)],
                 title=topic,
                 abstract=f"This thesis explores {topic.lower()} with a focus on the Kenyan context.",
                 department=student.department,

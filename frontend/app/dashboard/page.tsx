@@ -47,49 +47,64 @@ async function DashboardContent() {
 
   const { results: theses } = await thesesApi.list({ Cookie: cookieHeader });
 
-  return (
+    return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-sm text-pac-navy/60">
-            Welcome back, {user.full_name || user.username}
-          </p>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold text-pac-navy mt-1">
-            {user.role === "student"
-              ? "My Thesis"
-              : user.role === "supervisor"
-              ? "Theses I Supervise"
-              : "All Theses"}
-          </h1>
-        </div>
-        <LogoutButton />
+      {/* 1. Page Header */}
+      <div>
+        <p className="text-sm text-pac-navy/60">
+          Welcome back, {user.full_name || user.username}
+        </p>
+        <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold text-pac-navy mt-1">
+          {user.role === "student"
+            ? "My Thesis"
+            : user.role === "supervisor"
+            ? "Theses I Supervise"
+            : "All Theses"}
+        </h1>
       </div>
 
-      {theses.length === 0 ? (
-        <div className="rounded-lg border border-pac-navy/10 bg-white p-8 text-center">
+      {/* 2. Main Content Area */}
+      {user.role === "student" && theses.length === 0 ? (
+        /* Empty State for Students without a thesis */
+        <div className="rounded-lg border border-pac-navy/10 bg-white p-12 text-center shadow-sm mt-6">
+          <p className="font-[family-name:var(--font-display)] text-xl text-pac-navy mb-2">
+            You have not submitted a proposal yet.
+          </p>
+          <p className="text-pac-navy/60 text-sm mb-6">
+            Start your thesis journey by submitting your initial proposal to the department.
+          </p>
+          <Link
+            href="/propose"
+            className="inline-block rounded-md bg-pac-gold px-6 py-3 text-sm font-semibold text-white hover:bg-pac-goldLight transition-colors"
+          >
+            Submit Thesis Proposal
+          </Link>
+        </div>
+      ) : theses.length === 0 ? (
+        /* Empty State for Supervisors/Admins without assigned theses */
+        <div className="rounded-lg border border-pac-navy/10 bg-white p-8 text-center mt-6">
           <p className="font-[family-name:var(--font-display)] text-xl text-pac-navy">
             No theses yet
           </p>
           <p className="text-pac-navy/60 text-sm mt-2">
-            {user.role === "student"
-              ? "Your thesis will appear here once it has been registered."
-              : "Theses assigned to you will appear here."}
+            Theses assigned to you will appear here.
           </p>
         </div>
       ) : (
-        <ul className="space-y-4">
+        /* Thesis List */
+        <ul className="space-y-4 mt-6">
           {theses.map((t) => (
             <li key={t.id}>
               <Link
                 href={`/theses/${t.id}`}
-                className="block rounded-lg border border-pac-navy/10 bg-white p-5 hover:border-pac-gold transition-colors"
+                className="block rounded-lg border border-pac-navy/10 bg-white p-5 hover:border-pac-gold transition-colors shadow-sm"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="font-semibold text-pac-navy">{t.title}</h2>
+                    <h2 className="font-semibold text-pac-navy text-lg">{t.title}</h2>
                     <p className="text-sm text-pac-navy/60 mt-1">
-                      Student: {t.student.full_name} · Supervisor:{" "}
-                      {t.supervisor?.full_name ?? "Unassigned"}
+                      Student: <span className="font-medium text-pac-navy">{t.student.full_name}</span> · 
+                      Supervisor: <span className="font-medium text-pac-navy">{t.supervisor?.full_name ?? "Unassigned"}</span>
                     </p>
                   </div>
                   <StatusBadge status={t.status} label={t.status_display} />

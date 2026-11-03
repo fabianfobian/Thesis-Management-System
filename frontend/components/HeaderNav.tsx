@@ -25,7 +25,7 @@ export default function HeaderNav() {
       }
     }
     checkAuth();
-  }, []);
+  }, [pathname]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -51,6 +51,19 @@ export default function HeaderNav() {
       <nav className="hidden sm:flex items-center gap-4 text-sm font-medium">
         {user ? (
           <>
+            {user.role === "admin" && (
+              <>
+                <Link 
+                  href="/admin-panel" 
+                  className="text-pac-gold font-semibold hover:text-pac-goldLight transition-colors"
+                >
+                  Admin Panel
+                </Link>
+                <span className="text-white/40">|</span>
+              </>
+            )}
+
+            
             {/* Only render Dashboard link and separator if NOT on the dashboard */}
             {!isDashboard && (
               <>

@@ -99,6 +99,28 @@ class Thesis(models.Model):
         blank=True,
         related_name="supervised_theses",
         limit_choices_to={"role": User.Role.SUPERVISOR},
+        verbose_name="Main Supervisor"
+    )
+
+    # NEW FIELDS for the committee
+    co_supervisor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="co_supervised_theses",
+        limit_choices_to={"role": User.Role.SUPERVISOR},
+        verbose_name="Co-Supervisor"
+    )
+
+    third_reader = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="third_reader_theses",
+        limit_choices_to={"role": User.Role.SUPERVISOR},
+        verbose_name="Third Reader"
     )
 
     title = models.CharField(max_length=300)

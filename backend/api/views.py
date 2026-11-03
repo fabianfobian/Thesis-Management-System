@@ -17,17 +17,25 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Notification
-from .serializers import NotificationSerializer
 
-from .models import Chapter, Comment, Thesis, User
-from .permissions import IsThesisParticipant
+from .models import (
+    Chapter, 
+    Comment, 
+    Thesis, 
+    User,
+    Notification,
+)
+from .permissions import (
+    IsThesisParticipant,
+    IsSupervisorOrAdmin,
+)
 from .serializers import (
     ChapterSerializer,
     CommentSerializer,
     ThesisSerializer,
     UserSerializer,
     ChapterVersionSerializer,
+    NotificationSerializer,
 )
 
 
@@ -95,7 +103,13 @@ class ThesisViewSet(viewsets.ModelViewSet):
         """
         user = self.request.user
         if user.role == User.Role.STUDENT:
-            serializer.save(supervisor=self.get_object().supervisor)
+            # Keep the existing committee, don't let students change it
+            thesis = self.get_object()
+            serializer.save(
+                supervisor=thesis.supervisor,
+                co_supervisor=thesis.co_supervisor,
+                third_reader=thesis.third_reader
+            )
         else:
             serializer.save()
 
@@ -124,6 +138,34 @@ class ThesisViewSet(viewsets.ModelViewSet):
         thesis.save(update_fields=["status", "updated_at"])
 
         return Response(self.get_serializer(thesis).data)
+
+    @action(detail=True, methods=["post"], url_path="assign-committee")
+    def assign_committee(self, request, pk=None):
+        """
+        Admin-only endpoint to assign the 3 supervisors.
+        """
+        if request.user.role != User.Role.ADMIN:
+            return Response({"detail": "Only administrators can assign committee members."}, status=403)
+
+        thesis = self.get_object()
+        
+        # Get the IDs from the request
+        sup_id = request.data.get("supervisor_id")
+        co_sup_id = request.data.get("co_supervisor_id")
+        reader_id = request.data.get("third_reader_id")
+
+        try:
+            if sup_id:
+                thesis.supervisor = User.objects.get(id=sup_id, role=User.Role.SUPERVISOR)
+            if co_sup_id:
+                thesis.co_supervisor = User.objects.get(id=co_sup_id, role=User.Role.SUPERVISOR)
+            if reader_id:
+                thesis.third_reader = User.objects.get(id=reader_id, role=User.Role.SUPERVISOR)
+            
+            thesis.save()
+            return Response(self.get_serializer(thesis).data)
+        except User.DoesNotExist:
+            return Response({"detail": "One or more selected users are invalid."}, status=400)
 
 
 # ---------------------------------------------------------------------------
@@ -308,3 +350,14 @@ class MeViewSet(viewsets.ViewSet):
 
     def list(self, request):
         return Response(UserSerializer(request.user).data)
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only list of users. Used by the admin to pick supervisors.
+    """
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSupervisorOrAdmin]
+
+    def get_queryset(self):
+        # Only return supervisors so the admin can pick them
+        return User.objects.filter(role=User.Role.SUPERVISOR).order_by("first_name")

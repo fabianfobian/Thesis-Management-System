@@ -60,10 +60,24 @@ async function ThesisContent({ params }: { params: Promise<{ id: string }> }) {
             <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold text-pac-navy">
               {thesis.title}
             </h1>
-            <p className="text-sm text-pac-navy/60 mt-2">
-              Student: <span className="font-medium text-pac-navy">{thesis.student.full_name}</span> · 
-              Supervisor: <span className="font-medium text-pac-navy">{thesis.supervisor?.full_name ?? "Unassigned"}</span>
+
+
+            {/* Show the supervisory committee */}
+            <div className="text-sm text-pac-navy/60 mt-2 space-y-1">
+            <p>
+              Student: <span className="font-medium text-pac-navy">{thesis.student.full_name}</span>
             </p>
+            <p>
+              Main Supervisor: <span className="font-medium text-pac-navy">{thesis.supervisor?.full_name ?? "Unassigned"}</span>
+            </p>
+            <p>
+              Co-Supervisor: <span className="font-medium text-pac-navy">{thesis.co_supervisor?.full_name ?? "Unassigned"}</span>
+            </p>
+            <p>
+              Third Reader: <span className="font-medium text-pac-navy">{thesis.third_reader?.full_name ?? "Unassigned"}</span>
+            </p>
+          </div>
+
           </div>
           
           <div className="flex flex-col items-end gap-2">

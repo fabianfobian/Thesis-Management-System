@@ -80,6 +80,8 @@ export type Thesis = {
   status_display: string;
   student: User;
   supervisor: User | null;
+  co_supervisor: User | null;
+  third_reader: User | null;
   chapters: Chapter[];
   submitted_at: string;
   updated_at: string;
@@ -267,6 +269,26 @@ export const thesesApi = {
     }
     return res.json() as Promise<ChapterVersion>;
   },
+
+  createProposal: (data: { title: string; abstract: string; department: string }) =>
+    request<Thesis>("/theses/", {
+      method: "POST",
+      body: data,
+      csrf: true,
+    }),
+
+  assignCommittee: (id: number, data: { supervisor_id?: number, co_supervisor_id?: number, third_reader_id?: number }) =>
+    request<Thesis>(`/theses/${id}/assign-committee/`, {
+      method: "POST",
+      body: data,
+      csrf: true,
+    }),
+};
+
+// Create a new API object
+export const usersApi = {
+  listSupervisors: (headers?: Record<string, string>) =>
+    request<{ results: User[] }>("/users/", { headers }),
 };
 
 export const commentsApi = {
