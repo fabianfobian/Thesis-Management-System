@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+    // Tells Turbopack to ignore the "canvas" module used by react-pd
+    resolveAlias: {
+      canvas: "./empty-module.ts", 
+    },
   },
 };
 

@@ -6,7 +6,8 @@ import { auth, thesesApi, ApiError } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import StatusSelect from "@/components/StatusSelect";
 import UploadRevision from "@/components/UploadRevision";
-import CommentForm from "@/components/CommentForm"; // <-- Added Import
+import CommentForm from "@/components/CommentForm";
+import DocumentViewerToggle from "@/components/DocumentViewerToggle";
 
 export default function ThesisDetailPage({
   params,
@@ -140,24 +141,41 @@ async function ThesisContent({ params }: { params: Promise<{ id: string }> }) {
                       <p className="text-sm text-pac-navy/50 italic">No files uploaded yet.</p>
                     ) : (
                       <ul className="space-y-2">
-                        {chapter.versions.map((v) => (
-                          <li key={v.id} className="flex items-center justify-between text-sm bg-pac-cream/30 p-2 rounded">
-                            <span className="font-medium text-pac-navy">
-                              Version {v.version_number}
-                            </span>
-                            <span className="text-pac-navy/50 text-xs">
-                              {new Date(v.uploaded_at).toLocaleDateString()}
-                            </span>
-                            <a 
-                              href={v.document_url} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="text-pac-navy font-medium hover:text-pac-gold underline decoration-pac-gold/30"
-                            >
-                              Download
-                            </a>
-                          </li>
-                        ))}
+
+                        {chapter.versions.map((v) => {
+                          // Extract the file extension and name from the URL
+                          const fileName = v.document_url?.split("?")[0].split("/").pop() || "document.pdf";
+                          
+                          return (
+                            <li key={v.id} className="flex flex-col text-sm bg-pac-cream/30 p-3 rounded mb-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-pac-navy">
+                                  Version {v.version_number}
+                                </span>
+                                <span className="text-pac-navy/50 text-xs">
+                                  {new Date(v.uploaded_at).toLocaleDateString()}
+                                </span>
+                                <a 
+                                  href={v.document_url} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="text-pac-navy font-medium hover:text-pac-gold underline decoration-pac-gold/30"
+                                >
+                                  Download
+                                </a>
+                              </div>
+                              
+                              {/* Pass the filename so the viewer knows how to render it */}
+                              {v.document_url && (
+                                <DocumentViewerToggle 
+                                  fileUrl={v.document_url} 
+                                  fileName={fileName} 
+                                  versionNumber={v.version_number}
+                                />
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
