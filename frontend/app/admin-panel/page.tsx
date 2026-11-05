@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { auth, thesesApi, usersApi, ApiError } from "@/lib/api";
-import AssignCommitteeForm from "@/components/AssignCommitteeForm";
+import AssignCommitteeForm from "@/components/AssignmentCommitteeForm";
 
 export default function AdminPanelPage() {
   return (
