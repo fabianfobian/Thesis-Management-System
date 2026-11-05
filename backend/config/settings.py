@@ -231,7 +231,7 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://thesis-management-system-h8ga2mh9d-oumafobian-5802.vercel.app",
+    "https://thesis-management-system-pi.vercel.app",
 ]
 
 ALLOWED_HOSTS = [
@@ -248,7 +248,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://*.vercel.app",
-    "https://thesis-management-system-h8ga2mh9d-oumafobian-5802.vercel.app",
+    "https://thesis-management-system-pi.vercel.app",
 ]
 
 
