@@ -259,14 +259,17 @@ CSRF_TRUSTED_ORIGINS = [
 # `Samesite=Lax` allows the cookie to be sent on top-level navigation but
 # not on cross-site fetch — which is exactly what we want. In production
 # (same parent domain), this stays correct.
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_HTTPONLY = True       # JS can't read sessionid
 CSRF_COOKIE_HTTPONLY = False         # JS MUST read csrftoken to echo it
 
 # In production, uncomment these:
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# Required for Render (which sits behind a proxy)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
