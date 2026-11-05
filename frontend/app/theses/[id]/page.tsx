@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth, thesesApi, User, Thesis, ApiError } from "@/lib/api";
@@ -10,7 +10,17 @@ import UploadRevision from "@/components/UploadRevision";
 import CommentForm from "@/components/CommentForm";
 import DocumentViewerToggle from "@/components/DocumentViewerToggle";
 
+// 1. The default export only provides the Suspense boundary
 export default function ThesisDetailPage() {
+  return (
+    <Suspense fallback={<DetailSkeleton />}>
+      <ThesisContent />
+    </Suspense>
+  );
+}
+
+// 2. The actual content that uses useParams() lives here, safely inside Suspense
+function ThesisContent() {
   const params = useParams();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -20,7 +30,6 @@ export default function ThesisDetailPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        // Fetch user and thesis in parallel in the browser
         const [me, thesisData] = await Promise.all([
           auth.me(),
           thesesApi.retrieve(Number(params.id))
@@ -31,7 +40,7 @@ export default function ThesisDetailPage() {
         if (err instanceof ApiError && err.status === 403) {
           router.push("/login");
         } else if (err instanceof ApiError && err.status === 404) {
-          router.push("/dashboard"); // Thesis not found, go back
+          router.push("/dashboard");
         }
       } finally {
         setLoading(false);
@@ -40,24 +49,19 @@ export default function ThesisDetailPage() {
     loadData();
   }, [params.id, router]);
 
-  if (loading) {
-    return <DetailSkeleton />;
-  }
-
+  if (loading) return <DetailSkeleton />;
   if (!user || !thesis) return null;
 
   const canChangeStatus = user.role === "supervisor" || user.role === "admin";
 
   return (
     <div className="space-y-8">
-      {/* Header Breadcrumb */}
       <div>
         <Link href="/dashboard" className="text-sm text-pac-navy/60 hover:text-pac-gold">
           ← Back to Dashboard
         </Link>
       </div>
 
-      {/* Thesis Info */}
       <div className="bg-white border border-pac-navy/10 rounded-lg p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
           <div>
@@ -92,7 +96,6 @@ export default function ThesisDetailPage() {
         )}
       </div>
 
-      {/* Chapters */}
       <div>
         <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-pac-navy mb-4">
           Chapters
