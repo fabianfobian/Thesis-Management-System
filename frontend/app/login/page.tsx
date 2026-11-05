@@ -25,8 +25,10 @@ export default function LoginPage() {
       await auth.login(username, password);
       // Full navigation, not client-side push — ensures the whole app
       // re-renders with the new session cookie present.
-      router.push("/dashboard");
-      router.refresh();
+      // router.push("/dashboard");
+      // router.refresh();
+      // Use a hard redirect to bypass Next.js router cache
+      window.location.href = "/dashboard";
     } catch (err) {
       // Surface the actual reason so we're not debugging blind.
       if (err instanceof ApiError) {

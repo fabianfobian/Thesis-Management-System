@@ -32,8 +32,9 @@ export default function HeaderNav() {
     try {
       await auth.logout();
       setUser(null);
-      router.push("/");
-      router.refresh(); // Force server components to re-render without cookies
+      //router.push("/");
+      //router.refresh(); // Force server components to re-render without cookies
+      window.location.href = "/"; // Use a hard redirect here as well 
     } finally {
       setLoggingOut(false);
     }

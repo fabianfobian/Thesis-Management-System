@@ -4,7 +4,13 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { auth, thesesApi, ApiError } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
-import LogoutButton from "@/components/LogoutButton";
+
+// 1. Force this page to be rendered dynamically on every request.
+// Because it depends on the user's session cookies, it cannot be
+// statically prerendered or cached at build time.
+// export const dynamic = "force-dynamic";
+// export const instant = false; // Disables Next.js 16 instant navigation validation for this route#
+
 
 /**
  * Dashboard — the post-login landing page.
