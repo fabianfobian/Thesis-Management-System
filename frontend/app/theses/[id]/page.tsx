@@ -10,7 +10,6 @@ import UploadRevision from "@/components/UploadRevision";
 import CommentForm from "@/components/CommentForm";
 import DocumentViewerToggle from "@/components/DocumentViewerToggle";
 
-// 1. The default export only provides the Suspense boundary
 export default function ThesisDetailPage() {
   return (
     <Suspense fallback={<DetailSkeleton />}>
@@ -19,13 +18,18 @@ export default function ThesisDetailPage() {
   );
 }
 
-// 2. The actual content that uses useParams() lives here, safely inside Suspense
 function ThesisContent() {
   const params = useParams();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [thesis, setThesis] = useState<Thesis | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // 1. Track the active tab ("report" or "document")
+  const [activeTab, setActiveTab] = useState<"report" | "document">("document");
+  
+  // 2. Track which chapter's document we are currently viewing
+  const [activeDoc, setActiveDoc] = useState<{ url: string; name: string; version: number } | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -56,12 +60,14 @@ function ThesisContent() {
 
   return (
     <div className="space-y-8">
+      {/* Header Breadcrumb */}
       <div>
         <Link href="/dashboard" className="text-sm text-pac-navy/60 hover:text-pac-gold">
           ← Back to Dashboard
         </Link>
       </div>
 
+      {/* Thesis Info */}
       <div className="bg-white border border-pac-navy/10 rounded-lg p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
           <div>
@@ -96,6 +102,7 @@ function ThesisContent() {
         )}
       </div>
 
+      {/* Chapters */}
       <div>
         <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-pac-navy mb-4">
           Chapters
@@ -122,6 +129,7 @@ function ThesisContent() {
                     <p className="text-sm text-pac-navy/80 whitespace-pre-wrap">{chapter.content}</p>
                   )}
                   
+                  {/* File Versions List */}
                   <div className="mt-4 border-t border-pac-navy/10 pt-4">
                     <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-3">
                       Submitted Files
@@ -129,27 +137,73 @@ function ThesisContent() {
                     {chapter.versions.length === 0 ? (
                       <p className="text-sm text-pac-navy/50 italic">No files uploaded yet.</p>
                     ) : (
-                      <ul className="space-y-2">
+                      <ul className="space-y-2 mb-6">
                         {chapter.versions.map((v) => {
                           const fileName = v.document_url?.split("?")[0].split("/").pop() || "document.pdf";
                           return (
-                            <li key={v.id} className="flex flex-col text-sm bg-pac-cream/30 p-3 rounded mb-2">
-                              <div className="flex items-center justify-between">
+                            <li key={v.id} className="flex items-center justify-between text-sm bg-pac-cream/30 p-3 rounded">
+                              <div>
                                 <span className="font-medium text-pac-navy">Version {v.version_number}</span>
-                                <span className="text-pac-navy/50 text-xs">{new Date(v.uploaded_at).toLocaleDateString()}</span>
-                                <a href={v.document_url} target="_blank" rel="noreferrer" className="text-pac-navy font-medium hover:text-pac-gold underline decoration-pac-gold/30">
-                                  Download
-                                </a>
+                                <span className="text-pac-navy/50 text-xs ml-3">{new Date(v.uploaded_at).toLocaleDateString()}</span>
                               </div>
-                              {v.document_url && (
-                                <DocumentViewerToggle fileUrl={v.document_url} fileName={fileName} versionNumber={v.version_number} />
-                              )}
+                              <button 
+                                onClick={() => {
+                                  setActiveDoc({ url: v.document_url!, name: fileName, version: v.version_number });
+                                  setActiveTab("document"); // Default to document view
+                                }}
+                                className="text-pac-navy font-medium hover:text-pac-gold underline decoration-pac-gold/30"
+                              >
+                                View Document
+                              </button>
                             </li>
                           );
                         })}
                       </ul>
                     )}
                   </div>
+
+                  {/* 3. THE NEW TABS & VIEWER */}
+                  {activeDoc && (
+                    <div className="mt-6 border-t border-pac-navy/10 pt-6">
+                      {/* Tab Buttons exactly like the screenshot */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <button
+                          onClick={() => setActiveTab("report")}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                            activeTab === "report" 
+                              ? "bg-pac-navy text-white" 
+                              : "bg-white border border-pac-navy/20 text-pac-navy hover:bg-pac-cream"
+                          }`}
+                        >
+                          Originality Report
+                        </button>
+                        <button
+                          onClick={() => setActiveTab("document")}
+                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                            activeTab === "document" 
+                              ? "bg-pac-navy text-white" 
+                              : "bg-white border border-pac-navy/20 text-pac-navy hover:bg-pac-cream"
+                          }`}
+                        >
+                          Original Document
+                        </button>
+                        <div className="ml-auto">
+                          <button onClick={() => setActiveDoc(null)} className="text-sm text-red-600 hover:underline">Close Viewer</button>
+                        </div>
+                      </div>
+
+                      {/* The Actual Viewer Component */}
+                      <div className="rounded-lg overflow-hidden border border-pac-navy/10">
+                        <DocumentViewerToggle
+                          fileUrl={activeDoc.url}
+                          fileName={activeDoc.name}
+                          versionNumber={activeDoc.version}
+                          activeTab={activeTab}
+                          onTabChange={setActiveTab}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {user.role === "student" && (
                     <UploadRevision chapterId={chapter.id} />
