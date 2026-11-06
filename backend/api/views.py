@@ -167,6 +167,27 @@ class ChapterViewSet(viewsets.ModelViewSet):
     def upload_version(self, request, pk=None):
         from .models import ChapterVersion
         from .serializers import ChapterVersionSerializer
+        from .services.plagiarism import PlagiarismService 
+        import io
+
+        # --- Text extraction helpers ---
+        def extract_text_from_file(file_obj, ext):
+            text = ""
+            try:
+                if ext == "pdf":
+                    from pypdf import PdfReader
+                    reader = PdfReader(file_obj)
+                    for page in reader.pages:
+                        text += page.extract_text() or ""
+                elif ext == "docx":
+                    import docx
+                    doc = docx.Document(file_obj)
+                    text = "\n".join([p.text for p in doc.paragraphs])
+                elif ext == "txt":
+                    text = file_obj.read().decode("utf-8", errors="ignore")
+            except Exception as e:
+                print("Extraction error:", e)
+            return text
 
         chapter = self.get_object()
                 
@@ -176,6 +197,12 @@ class ChapterViewSet(viewsets.ModelViewSet):
         file_obj = request.FILES.get("document")
         if not file_obj:
             return Response({"detail": "No file provided."}, status=400)
+
+        # 1. Extract text BEFORE saving to S3 (the file pointer moves!)
+        ext = file_obj.name.split(".")[-1].lower()
+        extracted_text = extract_text_from_file(file_obj, ext)
+        file_obj.seek(0) # Reset pointer so it can be saved to S3
+
 
         latest = chapter.versions.first()
         next_version = (latest.version_number + 1) if latest else 1
@@ -188,6 +215,14 @@ class ChapterViewSet(viewsets.ModelViewSet):
         
         chapter.status = Chapter.Status.SUBMITTED
         chapter.save()
+
+        # Auto-trigger Plagiarism Check
+        if extracted_text:
+            result = PlagiarismService.check_text(extracted_text)
+            chapter.plagiarism_score = result["score"]
+            chapter.plagiarism_report = result["report"]
+            chapter.plagiarism_status = result["status"]
+            chapter.save()
 
         return Response(ChapterVersionSerializer(version).data, status=201)
 

@@ -171,7 +171,7 @@ function ThesisContent() {
                           fileUrl={activeDoc.url}
                           fileName={activeDoc.name}
                           versionNumber={activeDoc.version}
-                          chapter={chapter}
+                          chapter={thesis.chapters.find(c => c.id === chapter.id) || chapter}
                           onRefresh={async () => {
                             const updated = await thesesApi.retrieve(Number(params.id));
                             setThesis(updated);

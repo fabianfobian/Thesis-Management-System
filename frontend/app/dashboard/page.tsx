@@ -37,6 +37,11 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
+  // Calculate the stats for the Analytics Cards
+  const totalTheses = theses.length;
+  const pendingTheses = theses.filter(t => ["proposal", "under_review", "in_progress"].includes(t.status)).length;
+  const completedTheses = theses.filter(t => ["approved", "defended"].includes(t.status)).length;
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -52,6 +57,24 @@ export default function DashboardPage() {
             : "All Theses"}
         </h1>
       </div>
+
+      {/* Analytics Cards (Only show for supervisors and admins) */}
+      {user.role !== "student" && theses.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white border border-pac-navy/10 rounded-lg p-5 shadow-sm">
+            <p className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-1">Total Theses</p>
+            <p className="text-3xl font-bold text-pac-navy">{totalTheses}</p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 shadow-sm">
+            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider mb-1">Action Required</p>
+            <p className="text-3xl font-bold text-amber-800">{pendingTheses}</p>
+          </div>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-5 shadow-sm">
+            <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider mb-1">Completed</p>
+            <p className="text-3xl font-bold text-emerald-800">{completedTheses}</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       {user.role === "student" && theses.length === 0 ? (

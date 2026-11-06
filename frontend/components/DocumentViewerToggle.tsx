@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { fileKind, pptxSlides, xlsxSheets, extractPlainText } from "@/lib/extract";
 import { thesesApi, Chapter } from "@/lib/api";
@@ -31,8 +31,13 @@ export default function DocumentViewerToggle({
   const [err, setErr] = useState<string | null>(null);
   const [sheet, setSheet] = useState(0);
   const [checking, setChecking] = useState(false);
+  const loadedUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
+
+    if (loadedUrlRef.current === fileUrl) return; // Prevent infinite loop
+    loadedUrlRef.current = fileUrl;
+
     let url: string | null = null;
     setView(null);
     setErr(null);
@@ -66,10 +71,10 @@ export default function DocumentViewerToggle({
   }, [fileUrl, fileName]);
 
   useEffect(() => {
-    if (!extractedText && !err) {
+    if (!extractedText && !err && loadedUrlRef.current === fileUrl) {
       extractPlainText(fileUrl, fileName).then(setExtractedText).catch((e) => setErr(e.message));
     }
-  }, [fileUrl, fileName, extractedText, err]);
+  }, [fileUrl, fileName, extractedText, err,chapter.id]);
 
   async function handleRunCheck() {
     if (!extractedText) return;
@@ -134,7 +139,14 @@ export default function DocumentViewerToggle({
               <div>
                 <h4 className="font-bold text-pac-navy mb-2">Similarity Score</h4>
                 
-                {chapter.plagiarism_status === "checked" ? (
+                {/* If the check is pending (e.g. just uploaded) */}
+                {chapter.plagiarism_status === "pending" || chapter.plagiarism_status === "checking" ? (
+                  <div className="p-4 rounded-lg bg-white border border-pac-navy/10 text-center flex flex-col items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-pac-navy" />
+                    <p className="text-sm text-pac-navy/60">Checking document...</p>
+                  </div>
+                ) : chapter.plagiarism_status === "checked" ? (
+                  /* If the check is done, show the score */
                   <div className={`p-4 rounded-lg flex items-center gap-3 ${
                     (chapter.plagiarism_score ?? 0) > 20 ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"
                   }`}>
@@ -145,15 +157,9 @@ export default function DocumentViewerToggle({
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-lg bg-white border border-pac-navy/10 text-center">
-                    <p className="text-sm text-pac-navy/60 mb-3">Not checked yet.</p>
-                    <button
-                      onClick={handleRunCheck}
-                      disabled={checking || !extractedText}
-                      className="w-full bg-pac-navy text-white text-sm font-medium py-2 rounded hover:bg-pac-navyLight disabled:opacity-50 transition-colors"
-                    >
-                      {checking ? "Analyzing..." : "Run Similarity Check"}
-                    </button>
+                  /* If the check failed */
+                  <div className="p-4 rounded-lg bg-red-50 text-red-800 text-sm">
+                    Failed to generate report.
                   </div>
                 )}
               </div>
