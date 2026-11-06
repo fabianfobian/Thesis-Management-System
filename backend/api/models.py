@@ -184,6 +184,15 @@ class Chapter(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Plagiarism fields
+    plagiarism_score = models.FloatField(null=True, blank=True, help_text="Percentage similarity")
+    plagiarism_status = models.CharField(
+        max_length=20,
+        choices=[("pending", "Pending"), ("checking", "Checking"), ("checked", "Checked"), ("failed", "Failed")],
+        default="pending"
+    )
+    plagiarism_report = models.JSONField(null=True, blank=True, help_text="Full JSON report from the API")
+    
     class Meta:
         unique_together = ("thesis", "number")
         ordering = ["thesis", "number"]

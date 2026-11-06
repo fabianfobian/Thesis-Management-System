@@ -165,42 +165,28 @@ function ThesisContent() {
                   {/* 3. THE NEW TABS & VIEWER */}
                   {activeDoc && (
                     <div className="mt-6 border-t border-pac-navy/10 pt-6">
-                      {/* Tab Buttons exactly like the screenshot */}
-                      <div className="flex items-center gap-2 mb-4">
-                        <button
-                          onClick={() => setActiveTab("report")}
-                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                            activeTab === "report" 
-                              ? "bg-pac-navy text-white" 
-                              : "bg-white border border-pac-navy/20 text-pac-navy hover:bg-pac-cream"
-                          }`}
-                        >
-                          Originality Report
-                        </button>
-                        <button
-                          onClick={() => setActiveTab("document")}
-                          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                            activeTab === "document" 
-                              ? "bg-pac-navy text-white" 
-                              : "bg-white border border-pac-navy/20 text-pac-navy hover:bg-pac-cream"
-                          }`}
-                        >
-                          Original Document
-                        </button>
-                        <div className="ml-auto">
-                          <button onClick={() => setActiveDoc(null)} className="text-sm text-red-600 hover:underline">Close Viewer</button>
-                        </div>
-                      </div>
-
-                      {/* The Actual Viewer Component */}
-                      <div className="rounded-lg overflow-hidden border border-pac-navy/10">
+                      {/* The Actual Viewer Component (It handles its own tabs) */}
+                      <div className="rounded-lg overflow-hidden border border-pac-navy/10 relative">
                         <DocumentViewerToggle
                           fileUrl={activeDoc.url}
                           fileName={activeDoc.name}
                           versionNumber={activeDoc.version}
-                          activeTab={activeTab}
-                          onTabChange={setActiveTab}
+                          chapter={chapter}
+                          onRefresh={async () => {
+                            const updated = await thesesApi.retrieve(Number(params.id));
+                            setThesis(updated);
+                          }}
                         />
+                      </div>
+                      
+                      {/* A simple close button below the viewer */}
+                      <div className="mt-3 text-right">
+                        <button 
+                          onClick={() => setActiveDoc(null)} 
+                          className="text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
+                        >
+                          Close Viewer
+                        </button>
                       </div>
                     </div>
                   )}

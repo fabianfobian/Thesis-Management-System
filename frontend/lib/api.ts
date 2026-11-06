@@ -69,6 +69,9 @@ export type Chapter = {
   comments: Comment[];
   submitted_at: string;
   updated_at: string;
+  plagiarism_score: number | null;
+  plagiarism_status: "pending" | "checking" | "checked" | "failed";
+  plagiarism_report: any | null;
 };
 
 export type Thesis = {
@@ -269,6 +272,13 @@ export const thesesApi = {
     }
     return res.json() as Promise<ChapterVersion>;
   },
+
+  checkPlagiarism: (chapterId: number, text: string) =>
+    request<Chapter>(`/chapters/${chapterId}/check-plagiarism/`, {
+      method: "POST",
+      body: { text },
+      csrf: true,
+    }),
 
   createProposal: (data: { title: string; abstract: string; department: string }) =>
     request<Thesis>("/theses/", {
