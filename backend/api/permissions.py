@@ -71,3 +71,14 @@ class IsThesisParticipant(permissions.BasePermission):
             thesis = obj.chapter.thesis
 
         return user == thesis.student or user == thesis.supervisor
+
+class IsSuperuser(permissions.BasePermission):
+    """
+    Allows access only to superusers (the ICT team).
+    This is used for administrative endpoints that should not be
+    accessible to Deans or HODs.
+    """
+    message = "Only the ICT Superuser team can perform this action."
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.is_superuser)

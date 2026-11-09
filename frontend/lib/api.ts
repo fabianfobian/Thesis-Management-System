@@ -23,6 +23,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 export type Role = "student" | "supervisor" | "admin";
 
+export type Group = { 
+  id: number; 
+  name: string; 
+};
+
+export type Department = { 
+  id: number; 
+  name: string; 
+  school_name: string; 
+};
 export type User = {
   id: number;
   username: string;
@@ -30,6 +40,8 @@ export type User = {
   full_name: string;
   role: Role;
   department: string;
+  is_superuser: boolean;
+  generated_password?: string;
 };
 
 export type ThesisStatus =
@@ -182,9 +194,21 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     let detail = `API ${res.status}`;
     try {
       const data = await res.json();
-      detail = data.detail ?? JSON.stringify(data);
-    } catch {
-      /* ignore — non-JSON error body */
+
+      if (data.detail) {
+        detail = data.detail; // For 404s or 403s
+      } else if (typeof data === "object") {
+        
+        const firstKey = Object.keys(data)[0];
+        const firstError = data[firstKey];
+        if (Array.isArray(firstError)) {
+          detail = firstError[0]; 
+        } else {
+          detail = String(firstError);
+        }
+      }
+    } catch{
+
     }
     throw new ApiError(res.status, detail);
   }
@@ -298,7 +322,13 @@ export const thesesApi = {
 // Create a new API object
 export const usersApi = {
   listSupervisors: (headers?: Record<string, string>) =>
-    request<{ results: User[] }>("/users/", { headers }),
+    request<{ results: User[] }>("/users/?role=supervisor", { headers }),
+  listGroups: () => 
+    request<{ results: Group[] }>("/groups/"),
+  listDepartments: () => 
+    request<{ results: Department[] }>("/departments/"),
+  createUser: (data: any) => 
+    request<User & { generated_password: string }>("/users/", { method: "POST", body: data, csrf: true }),
 };
 
 export const commentsApi = {

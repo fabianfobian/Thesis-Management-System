@@ -7,17 +7,19 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-
+from django.contrib.auth.models import Group
 from .models import (
     Chapter, 
     Comment, 
     Thesis, 
     User,
     Notification,
+    Department,
 )
 from .permissions import (
     IsThesisParticipant,
     IsSupervisorOrAdmin,
+    IsSuperuser,
 )
 from .serializers import (
     ChapterSerializer,
@@ -26,6 +28,8 @@ from .serializers import (
     UserSerializer,
     ChapterVersionSerializer,
     NotificationSerializer,
+    GroupSerializer, 
+    DepartmentSerializer,
 )
 from .services.plagiarism import PlagiarismService # <-- ADDED IMPORT
 
@@ -337,12 +341,39 @@ class MeViewSet(viewsets.ViewSet):
     def list(self, request):
         return Response(UserSerializer(request.user).data)
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Read-only list of users. Used by the admin to pick supervisors.
+    Returns the list of custom roles (e.g., Dean, HOD) created by the ICT team.
+    """
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSuperuser]
+
+class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Returns the list of PAC departments.
+    """
+    queryset = Department.objects.all()
+    serializer_class = DepartmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for users. Only Superusers can create or edit users.
     """
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSupervisorOrAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsSuperuser]
 
     def get_queryset(self):
-        return User.objects.filter(role=User.Role.SUPERVISOR).order_by("first_name")
+        return User.objects.all().order_by("first_name")
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Grab the generated password and add it to the response JSON
+        response_data = serializer.data
+        response_data["generated_password"] = getattr(user, "_generated_password", None)
+
+        return Response(response_data, status=201)

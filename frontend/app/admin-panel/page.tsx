@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { auth, thesesApi, usersApi, User, Thesis, ApiError } from "@/lib/api";
 import AssignCommitteeForm from "@/components/AssignmentCommitteeForm";
 
@@ -61,6 +62,12 @@ export default function AdminPanelPage() {
       <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold text-pac-navy">
         Admin Panel: Committee Assignment
       </h1>
+      <Link 
+          href="/admin-panel/users" 
+          className="bg-white border border-pac-navy/20 text-pac-navy px-4 py-2 rounded-md text-sm font-medium hover:bg-pac-cream transition-colors"
+        >
+          + Manage Users
+      </Link>
       
       {theses.length === 0 ? (
         <p className="text-pac-navy/60">No theses in the system yet.</p>
