@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     
     #local
     'api.apps.ApiConfig',
+    'django_extensions',
 ]
 
 #-----------------------------------------------------------------
