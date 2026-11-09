@@ -285,19 +285,12 @@ class CommentViewSet(viewsets.ModelViewSet):
         chapter = serializer.validated_data["chapter"]
         thesis = chapter.thesis
         user = self.request.user
+        if user.role == User.Role.STUDENT:
+            # Automatically assign the department from the user's profile
+            serializer.save(student=user, department=user.department)
+        else:
+            serializer.save()
 
-        is_admin = user.role == User.Role.ADMIN
-        is_participant = (
-            user == thesis.student or 
-            user == thesis.supervisor or 
-            user == thesis.co_supervisor or 
-            user == thesis.third_reader
-        )
-
-        if not (is_admin or is_participant):
-            raise permissions.PermissionDenied("You cannot comment on this thesis.")
-
-        serializer.save(author=user)
 
 
 # ---------------------------------------------------------------------------

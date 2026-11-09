@@ -304,7 +304,7 @@ export const thesesApi = {
       csrf: true,
     }),
 
-  createProposal: (data: { title: string; abstract: string; department: string }) =>
+  createProposal: (data: { title: string; abstract: string}) =>
     request<Thesis>("/theses/", {
       method: "POST",
       body: data,
