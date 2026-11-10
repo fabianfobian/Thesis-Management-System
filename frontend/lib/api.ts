@@ -46,7 +46,7 @@ export type User = {
 
 export type ThesisStatus =
   | "proposal" | "in_progress" | "under_review"
-  | "revisions" | "approved" | "defended" | "archived";
+  | "revisions" | "approved" | "defended" | "archived"| "rejected";
 
 export type ChapterStatus =
   | "draft" 
@@ -86,6 +86,7 @@ export type Chapter = {
   comments: Comment[];
   submitted_at: string;
   updated_at: string;
+  deadline: string | null;
   plagiarism_score: number | null;
   plagiarism_status: "pending" | "checking" | "checked" | "failed";
   plagiarism_report: any | null;
@@ -346,7 +347,7 @@ export const thesesApi = {
       body: { status, deadline },
       csrf: true,
     }),
-    
+
   };
 
 // Create a new API object
