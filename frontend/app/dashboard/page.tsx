@@ -103,25 +103,64 @@ export default function DashboardPage() {
         </div>
       ) : (
         <ul className="space-y-4 mt-6">
-          {theses.map((t) => (
-            <li key={t.id}>
-              <Link
-                href={`/theses/${t.id}`}
-                className="block rounded-lg border border-pac-navy/10 bg-white p-5 hover:border-pac-gold transition-colors shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="font-semibold text-pac-navy text-lg">{t.title}</h2>
-                    <p className="text-sm text-pac-navy/60 mt-1">
-                      Student: <span className="font-medium text-pac-navy">{t.student.full_name}</span> · 
-                      Supervisor: <span className="font-medium text-pac-navy">{t.supervisor?.full_name ?? "Unassigned"}</span>
-                    </p>
+          {theses.map((t) => {
+            const isRejected = t.status === "rejected";
+            
+            return (
+              <li key={t.id}>
+                <div className={`block rounded-lg border p-5 shadow-sm transition-colors ${
+                  isRejected 
+                    ? "border-red-200 bg-red-50" 
+                    : "border-pac-navy/10 bg-white hover:border-pac-gold"
+                }`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className={`font-semibold text-lg ${isRejected ? "text-red-900" : "text-pac-navy"}`}>
+                        {t.title}
+                      </h2>
+                      <p className={`text-sm mt-1 ${isRejected ? "text-red-700/60" : "text-pac-navy/60"}`}>
+                        Student: <span className="font-medium">{t.student.full_name}</span> · 
+                        Supervisor: <span className="font-medium">{t.supervisor?.full_name ?? "Unassigned"}</span>
+                      </p>
+                      
+                      {/* Show rejection reason if rejected */}
+                      {isRejected && t.rejection_reason && (
+                        <div className="mt-4 p-3 bg-white/60 rounded border border-red-200 text-sm text-red-800">
+                          <strong>Reason for rejection:</strong> {t.rejection_reason}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-3">
+                      <StatusBadge status={t.status} label={t.status_display} />
+                      
+                      {isRejected ? (
+                        <button
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            if (confirm("Are you sure? This will delete your rejected proposal so you can start fresh.")) {
+                              await thesesApi.discard(t.id);
+                              window.location.reload(); // Refresh to show the "Submit Proposal" button
+                            }
+                          }}
+                          className="text-sm font-medium bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700"
+                        >
+                          Discard Proposal
+                        </button>
+                      ) : (
+                        <Link
+                          href={`/theses/${t.id}`}
+                          className="text-sm font-medium text-pac-navy hover:text-pac-gold underline decoration-pac-gold/30"
+                        >
+                          View Thesis
+                        </Link>
+                      )}
+                    </div>
                   </div>
-                  <StatusBadge status={t.status} label={t.status_display} />
                 </div>
-              </Link>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

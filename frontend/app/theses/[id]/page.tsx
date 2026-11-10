@@ -100,6 +100,21 @@ function ThesisContent() {
             <p className="text-sm text-pac-navy/80 leading-relaxed">{thesis.abstract}</p>
           </div>
         )}
+
+        {thesis.status === "rejected" && thesis.rejection_reason && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <h3 className="text-sm font-bold text-red-800 mb-1 flex items-center gap-2">
+              ⚠️ Proposal Rejected
+            </h3>
+            <p className="text-sm text-red-700">
+              {thesis.rejection_reason}
+            </p>
+            <p className="text-xs text-red-600 mt-2">
+              Please update your proposal and submit a new version.
+            </p>
+          </div>
+        )}
+        
       </div>
 
       {/* Chapters */}

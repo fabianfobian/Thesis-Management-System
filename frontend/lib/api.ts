@@ -330,7 +330,16 @@ export const thesesApi = {
       body: { action, reason },
       csrf: true,
     }),
-};
+
+  discard: (id: number) => 
+    request<void>(`/theses/${id}/discard/`, { method: "POST", csrf: true 
+    }),
+    
+  // Optional: If you want supervisors to edit the abstract later
+  updateThesis: (id: number, data: { title?: string, abstract?: string }) =>
+    request<Thesis>(`/theses/${id}/`, { method: "PATCH", body: data, csrf: true 
+    }),  
+  };
 
 // Create a new API object
 export const usersApi = {

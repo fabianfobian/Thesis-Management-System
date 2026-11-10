@@ -234,6 +234,7 @@ class ThesisSerializer(serializers.ModelSerializer):
             "department",
             "status",
             "status_display",
+            "rejection_reason",
             "student",
             "student_id",
             "supervisor",

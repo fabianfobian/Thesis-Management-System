@@ -150,6 +150,23 @@ class ThesisViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Proposal approved. You can now assign the committee."})
             
         return Response({"detail": "Invalid action."}, status=400)
+    
+    @action(detail=True, methods=["post"], url_path="discard")
+    def discard_thesis(self, request, pk=None):
+        """
+        Allows a student to delete a rejected proposal so they can submit a new one.
+        """
+        thesis = self.get_object()
+        user = request.user
+
+        if user != thesis.student:
+            return Response({"detail": "You can only discard your own thesis."}, status=403)
+
+        if thesis.status != Thesis.Status.REJECTED:
+            return Response({"detail": "You can only discard a rejected thesis."}, status=400)
+
+        thesis.delete()
+        return Response({"detail": "Thesis discarded. You can now submit a new proposal."}, status=204)
 
 # ---------------------------------------------------------------------------
 # Chapters
