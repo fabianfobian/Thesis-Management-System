@@ -81,7 +81,7 @@ class ThesisViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-    @action(detail=True, methods=["post"], url_path="set-status", parser_classes=[MultiPartParser, FormParser])
+    @action(detail=True, methods=["post"], url_path="set-status",) # parser_classes=[MultiPartParser, FormParser])
     def set_status(self, request, pk=None):
         thesis = self.get_object()
         if request.user.role not in (User.Role.SUPERVISOR, User.Role.ADMIN):
@@ -147,7 +147,14 @@ class ThesisViewSet(viewsets.ModelViewSet):
             thesis.status = Thesis.Status.IN_PROGRESS
             thesis.rejection_reason = None # Clear any previous rejection
             thesis.save()
-            return Response({"detail": "Proposal approved. You can now assign the committee."})
+            if not thesis.chapters.exists():
+                Chapter.objects.create(
+                    thesis=thesis,
+                    number=1,
+                    title="Introduction",
+                    status=Chapter.Status.DRAFT
+                )
+            return Response({"detail": "Proposal approved. Chapter 1 has been created. You can now assign the committee."})
             
         return Response({"detail": "Invalid action."}, status=400)
     
@@ -243,15 +250,23 @@ class ChapterViewSet(viewsets.ModelViewSet):
         if request.user != chapter.thesis.student:
             return Response({"detail": "Only the student can upload files."}, status=403)
 
+        # --- 1. THE GATEKEEPER LOGIC ---
+        if chapter.number > 1:
+            previous_chapter = chapter.thesis.chapters.filter(number=chapter.number - 1).first()
+            if previous_chapter and previous_chapter.status != Chapter.Status.APPROVED:
+                return Response(
+                    {"detail": f"You must get Chapter {previous_chapter.number} approved before uploading Chapter {chapter.number}."}, 
+                    status=403
+                )
+
         file_obj = request.FILES.get("document")
         if not file_obj:
             return Response({"detail": "No file provided."}, status=400)
 
-        # 1. Extract text BEFORE saving to S3 (the file pointer moves!)
+        # 2. Extract text BEFORE saving to S3
         ext = file_obj.name.split(".")[-1].lower()
         extracted_text = extract_text_from_file(file_obj, ext)
-        file_obj.seek(0) # Reset pointer so it can be saved to S3
-
+        file_obj.seek(0)
 
         latest = chapter.versions.first()
         next_version = (latest.version_number + 1) if latest else 1
@@ -262,10 +277,12 @@ class ChapterViewSet(viewsets.ModelViewSet):
             document=file_obj,
         )
         
+        # --- 3. UPDATE STATUS AND CLEAR DEADLINE ---
         chapter.status = Chapter.Status.SUBMITTED
+        chapter.deadline = None # Clear the deadline when they submit
         chapter.save()
 
-        # Auto-trigger Plagiarism Check
+        # 4. Auto-trigger Plagiarism Check
         if extracted_text:
             result = PlagiarismService.check_text(extracted_text)
             chapter.plagiarism_score = result["score"]
@@ -298,6 +315,63 @@ class ChapterViewSet(viewsets.ModelViewSet):
         chapter.plagiarism_report = result["report"]
         chapter.plagiarism_status = result["status"]
         chapter.save()
+
+        return Response(self.get_serializer(chapter).data)
+    
+    @action(detail=True, methods=["post"], url_path="review")
+    def review_chapter(self, request, pk=None):
+        """
+        Allows supervisors/admins to approve or request revisions for a chapter.
+        Automatically generates the next chapter if approved.
+        """
+        chapter = self.get_object()
+        user = request.user
+
+        # Ensure the user is a supervisor or admin
+        if user.role not in (User.Role.SUPERVISOR, User.Role.ADMIN):
+            return Response({"detail": "Only supervisors can review chapters."}, status=403)
+
+        # Ensure this supervisor is assigned to this thesis
+        thesis = chapter.thesis
+        if user != thesis.supervisor and user != thesis.co_supervisor and user != thesis.third_reader and user.role != User.Role.ADMIN:
+            return Response({"detail": "You are not assigned to this thesis."}, status=403)
+
+        new_status = request.data.get("status")
+        deadline = request.data.get("deadline") 
+        
+        valid_statuses = [
+            Chapter.Status.APPROVED, 
+            Chapter.Status.REVISIONS, 
+            Chapter.Status.REJECTED
+        ]
+
+        if new_status not in valid_statuses:
+            return Response({"detail": f"Invalid status."}, status=400)
+
+        chapter.status = new_status
+        
+        if deadline:
+            chapter.deadline = deadline
+            
+        chapter.save()
+
+        # --- MAGIC: Auto-generate the next chapter ---
+        if new_status == Chapter.Status.APPROVED and chapter.number < 5:
+            next_number = chapter.number + 1
+            # Check if the next chapter already exists
+            if not thesis.chapters.filter(number=next_number).exists():
+                titles = {
+                    2: "Literature Review",
+                    3: "Methodology",
+                    4: "Results and Discussion",
+                    5: "Conclusion and Recommendations"
+                }
+                Chapter.objects.create(
+                    thesis=thesis,
+                    number=next_number,
+                    title=titles.get(next_number, f"Chapter {next_number}"),
+                    status=Chapter.Status.DRAFT
+                )
 
         return Response(self.get_serializer(chapter).data)
 

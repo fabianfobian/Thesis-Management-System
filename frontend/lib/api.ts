@@ -338,7 +338,15 @@ export const thesesApi = {
   // Optional: If you want supervisors to edit the abstract later
   updateThesis: (id: number, data: { title?: string, abstract?: string }) =>
     request<Thesis>(`/theses/${id}/`, { method: "PATCH", body: data, csrf: true 
-    }),  
+    }),
+    
+  reviewChapter: (chapterId: number, status: "approved" | "revisions" | "rejected", deadline?: string) =>
+    request<Chapter>(`/chapters/${chapterId}/review/`, {
+      method: "POST",
+      body: { status, deadline },
+      csrf: true,
+    }),
+    
   };
 
 // Create a new API object
