@@ -49,7 +49,12 @@ export type ThesisStatus =
   | "revisions" | "approved" | "defended" | "archived";
 
 export type ChapterStatus =
-  | "draft" | "submitted" | "under_review" | "revisions" | "approved";
+  | "draft" 
+  | "submitted" 
+  | "under_review" 
+  | "revisions" 
+  | "approved"
+  | "rejected";
 
 export type Comment = {
   id: number;
@@ -93,6 +98,7 @@ export type Thesis = {
   department: string;
   status: ThesisStatus;
   status_display: string;
+  rejection_reason: string | null
   student: User;
   supervisor: User | null;
   co_supervisor: User | null;
@@ -315,6 +321,13 @@ export const thesesApi = {
     request<Thesis>(`/theses/${id}/assign-committee/`, {
       method: "POST",
       body: data,
+      csrf: true,
+    }),
+
+  reviewProposal: (id: number, action: "approve" | "reject", reason?: string) =>
+    request<Thesis>(`/theses/${id}/review-proposal/`, {
+      method: "POST",
+      body: { action, reason },
       csrf: true,
     }),
 };

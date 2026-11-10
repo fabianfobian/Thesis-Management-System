@@ -114,6 +114,7 @@ class Thesis(models.Model):
 
     class Status(models.TextChoices):
         PROPOSAL = "proposal", "Proposal submitted"
+        REJECTED = "rejected","Rejected"
         IN_PROGRESS = "in_progress", "In progress"
         UNDER_REVIEW = "under_review", "Under review"
         REVISIONS = "revisions", "Revisions required"
@@ -174,6 +175,12 @@ class Thesis(models.Model):
         default=Status.PROPOSAL,
     )
 
+    rejection_reason = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text="Reason given by HOD if the proposal is rejected."
+    )
+
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -202,6 +209,7 @@ class Chapter(models.Model):
         UNDER_REVIEW = "under_review", "Under review"
         REVISIONS = "revisions", "Revisions required"
         APPROVED = "approved", "Approved"
+        REJECTED ="rejected","Rejected"
 
     thesis = models.ForeignKey(
         Thesis,
@@ -220,6 +228,12 @@ class Chapter(models.Model):
         max_length=20,
         choices=Status.choices,
         default=Status.DRAFT,
+    )
+
+    deadline = models.DateField(
+        null=True, 
+        blank=True, 
+        help_text="Target date for the student to submit the next revision."
     )
 
     submitted_at = models.DateTimeField(auto_now_add=True)

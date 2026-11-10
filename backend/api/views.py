@@ -122,6 +122,34 @@ class ThesisViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({"detail": "One or more selected users are invalid."}, status=400)
 
+    @action(detail=True, methods=["post"], url_path="review-proposal")
+    def review_proposal(self, request, pk=None):
+        """
+        HOD endpoint to approve or reject a thesis proposal.
+        """
+        thesis = self.get_object()
+        user = request.user
+
+        # Only Superusers (HOD/ICT) can review proposals
+        if not user.is_superuser:
+            return Response({"detail": "Only HODs can review proposals."}, status=403)
+
+        action = request.data.get("action") # "approve" or "reject"
+        reason = request.data.get("reason", "")
+
+        if action == "reject":
+            thesis.status = Thesis.Status.REJECTED # Or create a specific "REJECTED" status
+            thesis.rejection_reason = reason
+            thesis.save()
+            return Response({"detail": "Proposal rejected. Student notified."})
+            
+        elif action == "approve":
+            thesis.status = Thesis.Status.IN_PROGRESS
+            thesis.rejection_reason = None # Clear any previous rejection
+            thesis.save()
+            return Response({"detail": "Proposal approved. You can now assign the committee."})
+            
+        return Response({"detail": "Invalid action."}, status=400)
 
 # ---------------------------------------------------------------------------
 # Chapters
