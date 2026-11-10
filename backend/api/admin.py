@@ -8,7 +8,7 @@ the default UserAdmin so our custom fields (role, department) show up.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import Chapter, Comment, Thesis, User
+from .models import Chapter, Comment, Thesis, User,Notification, School, Department
 
 
 @admin.register(User)
@@ -36,3 +36,12 @@ class ChapterAdmin(admin.ModelAdmin):
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = ("chapter", "author", "created_at")
+
+@admin.register(School)
+class SchoolAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ("name", "school")
+    list_filter = ("school",)

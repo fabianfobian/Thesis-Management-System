@@ -13,11 +13,34 @@ Conventions
   `validate()` methods so it runs whether the object is created via the
   API or the admin.
 """
-
+from django.contrib.auth.models import Group
 from rest_framework import serializers
+import secrets
+import string
 
-from .models import Chapter, Comment, Thesis, User, ChapterVersion, Notification
-#from .models import Notification
+from .models import (
+    Chapter, 
+    Comment, 
+    Thesis, 
+    User, 
+    ChapterVersion, 
+    Notification,
+    Department,
+)
+#----------------------------------------------------
+# Group and department
+#------------------------------------------------------
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ["id", "name"]
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    school_name = serializers.CharField(source="school.name", read_only=True)
+    class Meta:
+        model = Department
+        fields = ["id", "name", "school_name"]
 
 # ---------------------------------------------------------------------------
 # Users
@@ -34,6 +57,11 @@ class UserSerializer(serializers.ModelSerializer):
 
     full_name = serializers.SerializerMethodField()
 
+    password = serializers.CharField(
+        write_only=True, 
+        required=False,
+        )
+
     class Meta:
         model = User
         fields = [
@@ -43,12 +71,30 @@ class UserSerializer(serializers.ModelSerializer):
             "full_name",
             "role",
             "department",
+            "is_superuser",
+            "registration_number", 
+            "password",
         ]
-        read_only_fields = fields  # populated by the system, not the client
+        read_only_fields = ["id", "full_name", "is_superuser"]
 
     def get_full_name(self, obj: User) -> str:
         """Prefer the person's real name; fall back to username."""
         return obj.get_full_name() or obj.username
+
+    def create(self, validated_data):
+        #password = validated_data.pop("password", "PacDefault2026!")
+        password = validated_data.pop("password", None)
+        if not password:
+            alphabet = string.ascii_letters + string.digits
+            random_string = ''.join(secrets.choice(alphabet) for i in range(6))
+            password = f"PAC-{random_string}"
+
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+
+        user._generated_password = password
+        return user
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +234,7 @@ class ThesisSerializer(serializers.ModelSerializer):
             "department",
             "status",
             "status_display",
+            "rejection_reason",
             "student",
             "student_id",
             "supervisor",

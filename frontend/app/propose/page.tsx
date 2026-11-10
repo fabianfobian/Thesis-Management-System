@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function ProposePage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ title: "", abstract: "", department: "" });
+  const [formData, setFormData] = useState({ title: "", abstract: ""});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,17 +43,7 @@ export default function ProposePage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white border border-pac-navy/10 rounded-lg p-6 shadow-sm space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-pac-navy mb-1">Department</label>
-          <input
-            required
-            type="text"
-            value={formData.department}
-            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-            className="w-full rounded-md border border-pac-navy/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pac-gold"
-            placeholder="e.g. Computer Science"
-          />
-        </div>
+        
         <div>
           <label className="block text-sm font-medium text-pac-navy mb-1">Thesis Title</label>
           <input

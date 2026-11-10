@@ -27,6 +27,35 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
+# ---------------------------------------------------------------------------
+# School model
+# ---------------------------------------------------------------------------
+class School(models.Model):
+    """
+    Represents an academic school (e.g., School of Business, School of Theology).
+    """
+    name = models.CharField(max_length=150, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+# ---------------------------------------------------------------------------
+# Department model
+# ---------------------------------------------------------------------------
+class Department(models.Model):
+    """
+    Represents a department within a school (e.g., Computer Science).
+    """
+    name = models.CharField(max_length=150)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name="departments")
+
+    class Meta:
+        # A department name must be unique within a school, but can repeat across schools
+        unique_together = ("school", "name")
+
+    def __str__(self):
+        return f"{self.name} ({self.school.name})"
 
 # ---------------------------------------------------------------------------
 # Users
@@ -60,7 +89,13 @@ class User(AbstractUser):
         help_text="Student registration number or staff ID.",
     )
 
-    department = models.CharField(max_length=120, blank=True)
+    department = models.ForeignKey(
+        Department, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="users"
+    )
 
     def __str__(self) -> str:
         return f"{self.get_full_name() or self.username} ({self.role})"
@@ -79,6 +114,7 @@ class Thesis(models.Model):
 
     class Status(models.TextChoices):
         PROPOSAL = "proposal", "Proposal submitted"
+        REJECTED = "rejected","Rejected"
         IN_PROGRESS = "in_progress", "In progress"
         UNDER_REVIEW = "under_review", "Under review"
         REVISIONS = "revisions", "Revisions required"
@@ -125,12 +161,24 @@ class Thesis(models.Model):
 
     title = models.CharField(max_length=300)
     abstract = models.TextField(blank=True)
-    department = models.CharField(max_length=120, blank=True)
+    department = models.ForeignKey(
+        Department, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="theses"
+    )
 
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.PROPOSAL,
+    )
+
+    rejection_reason = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text="Reason given by HOD if the proposal is rejected."
     )
 
     submitted_at = models.DateTimeField(auto_now_add=True)
@@ -161,6 +209,7 @@ class Chapter(models.Model):
         UNDER_REVIEW = "under_review", "Under review"
         REVISIONS = "revisions", "Revisions required"
         APPROVED = "approved", "Approved"
+        REJECTED ="rejected","Rejected"
 
     thesis = models.ForeignKey(
         Thesis,
@@ -181,9 +230,24 @@ class Chapter(models.Model):
         default=Status.DRAFT,
     )
 
+    deadline = models.DateField(
+        null=True, 
+        blank=True, 
+        help_text="Target date for the student to submit the next revision."
+    )
+
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Plagiarism fields
+    plagiarism_score = models.FloatField(null=True, blank=True, help_text="Percentage similarity")
+    plagiarism_status = models.CharField(
+        max_length=20,
+        choices=[("pending", "Pending"), ("checking", "Checking"), ("checked", "Checked"), ("failed", "Failed")],
+        default="pending"
+    )
+    plagiarism_report = models.JSONField(null=True, blank=True, help_text="Full JSON report from the API")
+    
     class Meta:
         unique_together = ("thesis", "number")
         ordering = ["thesis", "number"]

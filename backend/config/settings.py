@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     
     #local
     'api.apps.ApiConfig',
+    'django_extensions',
 ]
 
 #-----------------------------------------------------------------
@@ -196,9 +197,13 @@ STORAGES = {
         "BACKEND": "storages.backends.s3.S3Storage",
     },
     "staticfiles": {
-         # Use WhiteNoise to serve Django admin CSS/JS in production
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        #"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        # LOCAL: Django's built-in static storage (served by runserver)
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+
+        
+        # PROD: WhiteNoise (uncomment in production, comment the line above)
+        # "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        
     },
 }
 

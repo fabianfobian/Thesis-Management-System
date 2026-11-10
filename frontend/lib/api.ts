@@ -23,6 +23,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 export type Role = "student" | "supervisor" | "admin";
 
+export type Group = { 
+  id: number; 
+  name: string; 
+};
+
+export type Department = { 
+  id: number; 
+  name: string; 
+  school_name: string; 
+};
 export type User = {
   id: number;
   username: string;
@@ -30,14 +40,21 @@ export type User = {
   full_name: string;
   role: Role;
   department: string;
+  is_superuser: boolean;
+  generated_password?: string;
 };
 
 export type ThesisStatus =
   | "proposal" | "in_progress" | "under_review"
-  | "revisions" | "approved" | "defended" | "archived";
+  | "revisions" | "approved" | "defended" | "archived"| "rejected";
 
 export type ChapterStatus =
-  | "draft" | "submitted" | "under_review" | "revisions" | "approved";
+  | "draft" 
+  | "submitted" 
+  | "under_review" 
+  | "revisions" 
+  | "approved"
+  | "rejected";
 
 export type Comment = {
   id: number;
@@ -69,6 +86,10 @@ export type Chapter = {
   comments: Comment[];
   submitted_at: string;
   updated_at: string;
+  deadline: string | null;
+  plagiarism_score: number | null;
+  plagiarism_status: "pending" | "checking" | "checked" | "failed";
+  plagiarism_report: any | null;
 };
 
 export type Thesis = {
@@ -78,6 +99,7 @@ export type Thesis = {
   department: string;
   status: ThesisStatus;
   status_display: string;
+  rejection_reason: string | null
   student: User;
   supervisor: User | null;
   co_supervisor: User | null;
@@ -179,9 +201,21 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     let detail = `API ${res.status}`;
     try {
       const data = await res.json();
-      detail = data.detail ?? JSON.stringify(data);
-    } catch {
-      /* ignore — non-JSON error body */
+
+      if (data.detail) {
+        detail = data.detail; // For 404s or 403s
+      } else if (typeof data === "object") {
+        
+        const firstKey = Object.keys(data)[0];
+        const firstError = data[firstKey];
+        if (Array.isArray(firstError)) {
+          detail = firstError[0]; 
+        } else {
+          detail = String(firstError);
+        }
+      }
+    } catch{
+
     }
     throw new ApiError(res.status, detail);
   }
@@ -270,7 +304,14 @@ export const thesesApi = {
     return res.json() as Promise<ChapterVersion>;
   },
 
-  createProposal: (data: { title: string; abstract: string; department: string }) =>
+  checkPlagiarism: (chapterId: number, text: string) =>
+    request<Chapter>(`/chapters/${chapterId}/check-plagiarism/`, {
+      method: "POST",
+      body: { text },
+      csrf: true,
+    }),
+
+  createProposal: (data: { title: string; abstract: string}) =>
     request<Thesis>("/theses/", {
       method: "POST",
       body: data,
@@ -283,12 +324,42 @@ export const thesesApi = {
       body: data,
       csrf: true,
     }),
-};
+
+  reviewProposal: (id: number, action: "approve" | "reject", reason?: string) =>
+    request<Thesis>(`/theses/${id}/review-proposal/`, {
+      method: "POST",
+      body: { action, reason },
+      csrf: true,
+    }),
+
+  discard: (id: number) => 
+    request<void>(`/theses/${id}/discard/`, { method: "POST", csrf: true 
+    }),
+    
+  // Optional: If you want supervisors to edit the abstract later
+  updateThesis: (id: number, data: { title?: string, abstract?: string }) =>
+    request<Thesis>(`/theses/${id}/`, { method: "PATCH", body: data, csrf: true 
+    }),
+    
+  reviewChapter: (chapterId: number, status: "approved" | "revisions" | "rejected", deadline?: string) =>
+    request<Chapter>(`/chapters/${chapterId}/review/`, {
+      method: "POST",
+      body: { status, deadline },
+      csrf: true,
+    }),
+
+  };
 
 // Create a new API object
 export const usersApi = {
   listSupervisors: (headers?: Record<string, string>) =>
-    request<{ results: User[] }>("/users/", { headers }),
+    request<{ results: User[] }>("/users/?role=supervisor", { headers }),
+  listGroups: () => 
+    request<{ results: Group[] }>("/groups/"),
+  listDepartments: () => 
+    request<{ results: Department[] }>("/departments/"),
+  createUser: (data: any) => 
+    request<User & { generated_password: string }>("/users/", { method: "POST", body: data, csrf: true }),
 };
 
 export const commentsApi = {
