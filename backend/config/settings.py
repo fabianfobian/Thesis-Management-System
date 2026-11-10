@@ -198,11 +198,11 @@ STORAGES = {
     },
     "staticfiles": {
         # LOCAL: Django's built-in static storage (served by runserver)
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        #"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
 
         
         # PROD: WhiteNoise (uncomment in production, comment the line above)
-        # "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         
     },
 }
