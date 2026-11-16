@@ -477,7 +477,11 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsSuperuser]
 
     def get_queryset(self):
-        return User.objects.all().order_by("first_name")
+        queryset = User.objects.all().order_by("first_name")
+        role = self.request.query_params.get("role")
+        if role:
+            queryset = queryset.filter(role=role)
+        return queryset
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

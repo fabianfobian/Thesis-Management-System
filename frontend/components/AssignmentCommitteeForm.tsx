@@ -7,11 +7,14 @@ import { thesesApi, User, Thesis } from "@/lib/api";
 export default function AssignCommitteeForm({ thesis, supervisors }: { thesis: Thesis, supervisors: User[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     supervisor_id: thesis.supervisor?.id || "",
     co_supervisor_id: thesis.co_supervisor?.id || "",
     third_reader_id: thesis.third_reader?.id || "",
   });
+
+  const isAssigned = !!thesis.supervisor;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,6 +33,20 @@ export default function AssignCommitteeForm({ thesis, supervisors }: { thesis: T
     }
   }
 
+  // Filter out already-selected supervisors from the other dropdowns
+  const getAvailableSupervisors = (currentSelection: string) => {
+    return supervisors.filter(s => {
+      // Don't show the person selected in this dropdown (unless it's the current one)
+      // Don't show anyone selected in the other dropdowns
+      const isSelectedElsewhere = 
+        (formData.supervisor_id === String(s.id) && currentSelection !== "supervisor") ||
+        (formData.co_supervisor_id === String(s.id) && currentSelection !== "co_supervisor") ||
+        (formData.third_reader_id === String(s.id) && currentSelection !== "third_reader");
+      
+      return !isSelectedElsewhere;
+    });
+  };
+
   return (
     <form onSubmit={handleSubmit} className="bg-pac-cream/30 p-4 rounded-md border border-pac-navy/10 flex flex-col sm:flex-row gap-4 items-end">
       <div className="flex-1">
@@ -40,7 +57,7 @@ export default function AssignCommitteeForm({ thesis, supervisors }: { thesis: T
           className="w-full rounded border border-pac-navy/20 p-2 text-sm"
         >
           <option value="">-- Select --</option>
-          {supervisors.map((s) => (
+          {getAvailableSupervisors("supervisor").map((s) => (
             <option key={s.id} value={s.id}>{s.full_name}</option>
           ))}
         </select>
@@ -54,7 +71,7 @@ export default function AssignCommitteeForm({ thesis, supervisors }: { thesis: T
           className="w-full rounded border border-pac-navy/20 p-2 text-sm"
         >
           <option value="">-- Select --</option>
-          {supervisors.map((s) => (
+          {getAvailableSupervisors("co_supervisor").map((s) => (
             <option key={s.id} value={s.id}>{s.full_name}</option>
           ))}
         </select>
@@ -68,7 +85,7 @@ export default function AssignCommitteeForm({ thesis, supervisors }: { thesis: T
           className="w-full rounded border border-pac-navy/20 p-2 text-sm"
         >
           <option value="">-- Select --</option>
-          {supervisors.map((s) => (
+          {getAvailableSupervisors("third_reader").map((s) => (
             <option key={s.id} value={s.id}>{s.full_name}</option>
           ))}
         </select>
@@ -79,7 +96,7 @@ export default function AssignCommitteeForm({ thesis, supervisors }: { thesis: T
         disabled={loading}
         className="rounded bg-pac-navy px-4 py-2 text-sm font-semibold text-white hover:bg-pac-navyLight disabled:opacity-50 whitespace-nowrap"
       >
-        {loading ? "Saving..." : "Assign"}
+        {loading ? "Saving..." : isAssigned ? "Update Committee" : "Assign Committee"}
       </button>
     </form>
   );
