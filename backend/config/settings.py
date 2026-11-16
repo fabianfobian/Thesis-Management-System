@@ -284,3 +284,19 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# ---------------------------------------------------------------------------
+# EMERGENCY MIGRATION RUNNER (For Render Free Tier)
+# This forces the database to migrate on startup.
+# ---------------------------------------------------------------------------
+import os
+from django.core.management import call_command
+
+if os.environ.get("RENDER"):
+    try:
+        print("Running startup migrations...")
+        call_command("migrate", interactive=False)
+        print("Migrations complete.")
+    except Exception as e:
+        print(f"Migration failed: {e}")
