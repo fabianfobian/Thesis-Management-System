@@ -22,6 +22,10 @@ function ThesisContent() {
   const params = useParams();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+    // State for the inline date picker
+  const [approvingChapterId, setApprovingChapterId] = useState<number | null>(null);
+  const [deadlineDate, setDeadlineDate] = useState<string>("");
+  
   const [thesis, setThesis] = useState<Thesis | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -150,29 +154,88 @@ function ThesisContent() {
                     {/* SUPERVISOR REVIEW BUTTONS */}
                     {(user.role === "supervisor" || user.role === "admin") && 
                      (chapter.status === "submitted" || chapter.status === "under_review") && (
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={async () => {
-                            const deadline = prompt("Approve this chapter. Enter a deadline for the next chapter (YYYY-MM-DD), or leave blank:");
-                            if (deadline === null) return; // Cancelled
-                            await thesesApi.reviewChapter(chapter.id, "approved", deadline || undefined);
-                            refreshThesis();
-                          }}
-                          className="bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-emerald-700"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (confirm("Request revisions for this chapter?")) {
-                              await thesesApi.reviewChapter(chapter.id, "revisions");
-                              refreshThesis();
-                            }
-                          }}
-                          className="bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-red-700"
-                        >
-                          Request Revisions
-                        </button>
+                      <div className="flex flex-col items-end gap-2 mt-2">
+                        
+                        {/* If currently approving this chapter, show the date picker */}
+                        {approvingChapterId === chapter.id ? (
+                          <div className="bg-white p-3 rounded-lg border border-pac-gold shadow-md flex flex-col gap-2">
+                            <p className="text-xs font-semibold text-pac-navy">
+                              Approve Chapter {chapter.number}. When is Chapter {chapter.number + 1} due?
+                            </p>
+                            <input 
+                              type="date" 
+                              value={deadlineDate}
+                              onChange={(e) => setDeadlineDate(e.target.value)}
+                              className="text-sm border border-pac-navy/20 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-pac-gold"
+                              min={new Date().toISOString().split("T")[0]} // Prevent past dates
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await thesesApi.reviewChapter(chapter.id, "approved", deadlineDate || undefined);
+                                    setApprovingChapterId(null); // Hide picker
+                                    setDeadlineDate(""); // Reset
+                                    refreshThesis();
+                                  } catch (e) {
+                                    alert("Failed to approve.");
+                                  }
+                                }}
+                                className="flex-1 bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-emerald-700"
+                              >
+                                Confirm
+                              </button>
+
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await thesesApi.reviewChapter(chapter.id, "approved", undefined);
+                                    setApprovingChapterId(null);
+                                    setDeadlineDate("");
+                                    refreshThesis();
+                                  } catch (e) {
+                                    alert("Failed to approve.");
+                                  }
+                                }}
+                                className="flex-1 bg-gray-200 text-pac-navy text-xs font-semibold px-3 py-1.5 rounded hover:bg-gray-300"
+                                title="Approve without a deadline"
+                              >
+                                No Deadline
+                              </button>
+                              
+                              <button
+                                onClick={() => {
+                                  setApprovingChapterId(null);
+                                  setDeadlineDate("");
+                                }}
+                                className="flex-1 bg-gray-100 text-pac-navy text-xs font-semibold px-3 py-1.5 rounded hover:bg-gray-200"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* If not approving, show the standard buttons */
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setApprovingChapterId(chapter.id)}
+                              className="bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-emerald-700"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm("Request revisions for this chapter?")) {
+                                  await thesesApi.reviewChapter(chapter.id, "revisions");
+                                  refreshThesis();
+                                }
+                              }}
+                              className="bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-red-700"
+                            >
+                              Request Revisions
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

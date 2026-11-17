@@ -58,6 +58,40 @@ export default function DashboardPage() {
         </h1>
       </div>
 
+
+      {/* DEADLINE BANNER (Only for students) */}
+      {user.role === "student" && theses.length > 0 && (
+        <>
+          {theses.map(thesis => {
+            // Find the first chapter with a deadline that isn't approved yet
+            const activeChapter = thesis.chapters
+              .filter(c => c.deadline && c.status !== "approved" && c.status !== "rejected")
+              .sort((a, b) => a.number - b.number)[0];
+
+            if (!activeChapter) return null;
+            
+            const info = getDeadlineInfo(activeChapter.deadline!);
+
+            return (
+              <div key={thesis.id} className={`p-4 rounded-lg border shadow-sm mb-4 ${info.color}`}>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{info.icon}</span>
+                  <div>
+                    <h3 className="font-bold text-sm uppercase tracking-wider">
+                      Upcoming Deadline: Chapter {activeChapter.number}
+                    </h3>
+                    <p className="text-sm font-medium">
+                      {activeChapter.title} — {info.message} ({info.formattedDate})
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+
       {/* Analytics Cards (Only show for supervisors and admins) */}
       {user.role !== "student" && theses.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -165,6 +199,37 @@ export default function DashboardPage() {
       )}
     </div>
   );
+}
+
+function getDeadlineInfo(deadlineStr: string) {
+  const deadline = new Date(deadlineStr);
+  const today = new Date();
+  // Reset hours to 0 to compare days accurately
+  today.setHours(0, 0, 0, 0);
+  
+  const diffTime = deadline.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  let color = "bg-emerald-50 border-emerald-200 text-emerald-800";
+  let icon = "📅";
+  let message = `Due in ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+
+  if (diffDays < 0) {
+    color = "bg-red-50 border-red-200 text-red-800";
+    icon = "⚠️";
+    message = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''}`;
+  } else if (diffDays <= 3) {
+    color = "bg-amber-50 border-amber-200 text-amber-800";
+    icon = "⏰";
+  }
+
+  return { 
+    days: diffDays, 
+    color, 
+    icon, 
+    message, 
+    formattedDate: deadline.toLocaleDateString() 
+  };
 }
 
 function DashboardSkeleton() {

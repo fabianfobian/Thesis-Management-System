@@ -279,9 +279,17 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+#MAILERS = {
+#    'default': {
+#        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+#    },
+#}
 
+# ---------------------------------------------------------------------------
+# Email Configuration (Resend)
+# ---------------------------------------------------------------------------
+EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+ANYMAIL = {
+    "RESEND_API_KEY": os.getenv("RESEND_API_KEY"),
+}
+DEFAULT_FROM_EMAIL = "PAC Thesis System <onboarding@resend.dev>"

@@ -1,7 +1,8 @@
 """
 API viewsets for the PAC Thesis Tracking System.
 """
-
+from django.core.mail import send_mail
+from django.conf import settings
 from django.db.models import Prefetch
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
@@ -141,12 +142,26 @@ class ThesisViewSet(viewsets.ModelViewSet):
             thesis.status = Thesis.Status.REJECTED # Or create a specific "REJECTED" status
             thesis.rejection_reason = reason
             thesis.save()
-            return Response({"detail": "Proposal rejected. Student notified."})
+
+            # Send email
+            if thesis.student.email:
+                send_mail(
+                    subject="Proposal Rejected",
+                    message=f"Hello {thesis.student.get_full_name()},\n\nYour proposal has been rejected.\n\nReason: {reason}\n\nLog in to update: https://thesis-management-system-pi.vercel.app/theses/{thesis.id}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[thesis.student.email],
+                    fail_silently=True,
+                )           
+
+            return Response({
+                "detail": "Proposal rejected. Student notified."
+            })
             
         elif action == "approve":
             thesis.status = Thesis.Status.IN_PROGRESS
             thesis.rejection_reason = None # Clear any previous rejection
             thesis.save()
+
             if not thesis.chapters.exists():
                 Chapter.objects.create(
                     thesis=thesis,
@@ -154,6 +169,18 @@ class ThesisViewSet(viewsets.ModelViewSet):
                     title="Introduction",
                     status=Chapter.Status.DRAFT
                 )
+            
+            # Send email
+            if thesis.student.email:
+                send_mail(
+                    subject="Proposal Approved",
+                    message=f"Hello {thesis.student.get_full_name()},\n\nYour proposal has been approved! Chapter 1 is now available.\n\nLog in to get started: https://thesis-management-system-pi.vercel.app/theses/{thesis.id}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[thesis.student.email],
+                    fail_silently=True,
+                )
+
+
             return Response({"detail": "Proposal approved. Chapter 1 has been created. You can now assign the committee."})
             
         return Response({"detail": "Invalid action."}, status=400)
@@ -366,13 +393,23 @@ class ChapterViewSet(viewsets.ModelViewSet):
                     4: "Results and Discussion",
                     5: "Conclusion and Recommendations"
                 }
-                Chapter.objects.create(
+                next_chapter, created = Chapter.objects.get_or_create(
                     thesis=thesis,
                     number=next_number,
-                    title=titles.get(next_number, f"Chapter {next_number}"),
-                    status=Chapter.Status.DRAFT
+                    defaults={
+                        'title':titles.get(next_number, f"Chapter {next_number}"),
+                        'status':Chapter.Status.DRAFT
+                    }
                 )
 
+            # Move the deadline to the NEXT chapter (not the current one)    
+                if deadline:
+                    next_chapter.deadline = deadline
+                    next_chapter.save()
+            
+                # Clear the deadline from the chapter being approved
+                chapter.deadline = None
+                chapter.save()
         return Response(self.get_serializer(chapter).data)
 
 
@@ -404,11 +441,19 @@ class CommentViewSet(viewsets.ModelViewSet):
         chapter = serializer.validated_data["chapter"]
         thesis = chapter.thesis
         user = self.request.user
-        if user.role == User.Role.STUDENT:
-            # Automatically assign the department from the user's profile
-            serializer.save(student=user, department=user.department)
-        else:
-            serializer.save()
+
+        is_admin = user.role == User.Role.ADMIN
+        is_participant = (
+            user == thesis.student or 
+            user == thesis.supervisor or 
+            user == thesis.co_supervisor or 
+            user == thesis.third_reader
+        )
+
+        if not (is_admin or is_participant):
+            raise permissions.PermissionDenied("You cannot comment on this thesis.")
+        
+        serializer.save(author=user)
 
 
 
