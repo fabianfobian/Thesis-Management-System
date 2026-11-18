@@ -48,19 +48,27 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """
-    Compact user projection embedded inside other resources.
-
-    Kept intentionally small — we never want to leak password hashes or
-    permission flags to the frontend. Anything a client needs to render a
-    thesis card (name, role, department) is here.
+    Handles serialization for the User model.
+    - Used for listing, creating, and updating users.
+    - Never leaks password hashes.
+    - Allows profile updates (first name, email, etc.).
     """
-
+    
     full_name = serializers.SerializerMethodField()
-
+    department_details = serializers.SerializerMethodField()
     password = serializers.CharField(
         write_only=True, 
         required=False,
-        )
+    )
+
+    # Allow writing department by ID (e.g., {"department_id": 3})
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source="department",
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = User
@@ -68,21 +76,40 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "email",
+            "first_name",
+            "last_name",
             "full_name",
             "role",
             "department",
+            "department_id",
+            "department_details",
             "is_superuser",
             "registration_number", 
+            "phone_number",
             "password",
         ]
-        read_only_fields = ["id", "full_name", "is_superuser"]
+        read_only_fields = ["id", "full_name", "is_superuser","department"]
+        """
+        extra_kwargs = {
+            # The department is returned as an ID or object, but written via department_id
+            "department": {"read_only": True},
+        }
+        """
 
     def get_full_name(self, obj: User) -> str:
         """Prefer the person's real name; fall back to username."""
         return obj.get_full_name() or obj.username
 
+    def get_department_details(self, obj: User):
+        if not obj.department:
+            return None
+        return {
+            "name": obj.department.name,
+            "school": obj.department.school.name if obj.department.school else None,
+        }
+
     def create(self, validated_data):
-        #password = validated_data.pop("password", "PacDefault2026!")
+        # Generate a secure password if not provided
         password = validated_data.pop("password", None)
         if not password:
             alphabet = string.ascii_letters + string.digits
@@ -93,8 +120,22 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
+        # Attach for the response (UserViewSet will pick this up)
         user._generated_password = password
         return user
+
+    def update(self, instance, validated_data):
+        # If updating the password, hash it properly
+        password = validated_data.pop("password", None)
+        if password:
+            instance.set_password(password)
+
+        # Update the rest of the fields normally
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
 
 
 # ---------------------------------------------------------------------------
@@ -125,8 +166,18 @@ class ChapterVersionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChapterVersion
-        fields = ["id", "version_number", "document", "document_url", "uploaded_at"]
-        read_only_fields = ["id", "version_number", "uploaded_at"]
+        fields = [
+            "id", 
+            "version_number", 
+            "document", 
+            "document_url", 
+            "uploaded_at"
+        ]
+        read_only_fields = [
+            "id", 
+            "version_number", 
+            "uploaded_at"
+        ]
 
     def get_document_url(self, obj):
         if not obj.document:
@@ -164,6 +215,7 @@ class ChapterSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "comments",
+            "deadline",
             "submitted_at",
             "updated_at",
         ]

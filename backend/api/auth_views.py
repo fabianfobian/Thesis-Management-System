@@ -14,17 +14,43 @@ Using Django's built-in `login`/`logout` guarantees we stay compatible
 with the admin site — one login covers everything.
 """
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .serializers import UserSerializer
 
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+
+        if not user.check_password(old_password):
+            return Response({"detail": "Current password is incorrect."}, status=400)
+
+        try:
+            # Enforce Django's password rules (length, symbols, etc.)
+            validate_password(new_password, user)
+        except ValidationError as e:
+            return Response({"detail": e.messages[0]}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+        
+        # Keep the user logged in after the password change
+        update_session_auth_hash(request, user)
+        
+        return Response({"detail": "Password changed successfully."})
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
 class CsrfView(APIView):
@@ -85,3 +111,29 @@ class LogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response({"detail": "Logged out."}, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+
+        if not user.check_password(old_password):
+            return Response({"detail": "Current password is incorrect."}, status=400)
+
+        try:
+            # Enforce Django's password rules (length, symbols, etc.)
+            validate_password(new_password, user)
+        except ValidationError as e:
+            return Response({"detail": e.messages[0]}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+        
+        # Keep the user logged in after the password change
+        update_session_auth_hash(request, user)
+        
+        return Response({"detail": "Password changed successfully."})

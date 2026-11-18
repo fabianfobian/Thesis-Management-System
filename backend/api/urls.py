@@ -15,7 +15,12 @@ from django.urls import path
 
 from rest_framework.routers import DefaultRouter
 
-from .auth_views import CsrfView, LoginView, LogoutView
+from .auth_views import (
+    CsrfView, 
+    LoginView, 
+    LogoutView,
+    ChangePasswordView,
+)
 from .views import ChapterViewSet, CommentViewSet, MeViewSet, ThesisViewSet
 from .views import (
     ChapterViewSet, 
@@ -42,5 +47,6 @@ urlpatterns = [
     path("auth/csrf/",   CsrfView.as_view(),   name="auth-csrf"),
     path("auth/login/",  LoginView.as_view(),  name="auth-login"),
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
+    path("auth/change-password/", ChangePasswordView.as_view()),
     *router.urls,
 ]

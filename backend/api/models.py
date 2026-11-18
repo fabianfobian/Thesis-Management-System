@@ -89,6 +89,12 @@ class User(AbstractUser):
         help_text="Student registration number or staff ID.",
     )
 
+    phone_number = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Phone number for SMS notifications (e.g., +254712345678).",
+    )
+
     department = models.ForeignKey(
         Department, 
         on_delete=models.SET_NULL, 

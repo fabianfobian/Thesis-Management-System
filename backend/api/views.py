@@ -489,14 +489,33 @@ class NotificationViewSet(viewsets.ModelViewSet):
 # Users
 # ---------------------------------------------------------------------------
 
-class MeViewSet(viewsets.ViewSet):
+class MeViewSet(viewsets.GenericViewSet):
     """
     GET /api/me/ -> returns the authenticated user.
+    PATCH /api/me/ -> allows the user to update their own profile
     """
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
 
     def list(self, request):
         return Response(UserSerializer(request.user).data)
+
+    def partial_update(self, request, pk=None):
+        """Allow a user to update their own profile."""
+        user = request.user
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        
+        # SAFETY: Prevent users from changing their own role or department
+        # (Even though we made them read-only, we double-check here)
+        if "role" in request.data or "department_id" in request.data:
+            return Response(
+                {"detail": "You cannot change your role or department from your profile."}, 
+                status=403
+            )
+        
+        serializer.save()
+        return Response(serializer.data)
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     """

@@ -38,8 +38,17 @@ export type User = {
   username: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   role: Role;
   department: string;
+  department_id?: number;
+  department_details?: {
+    name: string;
+    school: string;
+  } | null;
+  registration_number?:string;
+  phone_number?:string;
   is_superuser: boolean;
   generated_password?: string;
 };
@@ -249,6 +258,13 @@ export const auth = {
       method: "POST",
       csrf: true,
     }),
+
+  changePassword: (old_password: string, new_password: string) =>
+    request<{ detail: string }>("/auth/change-password/", {
+      method: "POST",
+      body: { old_password, new_password },
+      csrf: true,
+    }),
  // Allow passing headers (like cookies) from Server Components
   me: (headers?: Record<string, string>) => request<User>("/me/", {headers}),
 };
@@ -354,12 +370,27 @@ export const thesesApi = {
 export const usersApi = {
   listSupervisors: (headers?: Record<string, string>) =>
     request<{ results: User[] }>("/users/?role=supervisor", { headers }),
+ 
   listGroups: () => 
     request<{ results: Group[] }>("/groups/"),
+
   listDepartments: () => 
     request<{ results: Department[] }>("/departments/"),
+  
   createUser: (data: any) => 
-    request<User & { generated_password: string }>("/users/", { method: "POST", body: data, csrf: true }),
+    request<User & { generated_password: string}>("/users/", { 
+      method: "POST", 
+      body: data, 
+      csrf: true     
+  }),
+
+
+  updateProfile: (data: Partial<User> & { password?: string }) =>
+    request<User>("/me/", {
+      method: "PATCH",
+      body: data,
+      csrf: true,
+    }),
 };
 
 export const commentsApi = {

@@ -79,8 +79,11 @@ export default function HeaderNav() {
             )}
             
             {/* User Name */}
-            <span className="text-pac-goldLight">{user.full_name || user.username}</span>
+            {/*<span className="text-pac-goldLight">{user.full_name || user.username}</span>*/}
             
+            <Link href="/profile" className="text-pac-goldLight hover:text-pac-gold transition-colors">
+                {user.full_name || user.username}
+            </Link>
             {/* White Separator Line */}
             <span className="text-white/40">|</span>
             
