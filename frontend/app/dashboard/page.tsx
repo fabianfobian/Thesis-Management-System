@@ -136,12 +136,47 @@ export default function DashboardPage() {
           </p>
         </div>
       ) : (
-        <ul className="space-y-4 mt-6">
+        <div className="space-y-6 mt-6">
           {theses.map((t) => {
             const isRejected = t.status === "rejected";
             
+            // --- 1. Build the Progress Tracker ---
+            const chapterTitles = [
+              "Introduction", 
+              "Literature Review", 
+              "Methodology", 
+              "Results and Discussion", 
+              "Conclusion and Recommendations"
+            ];
+            
+            const tracker = chapterTitles.map((title, index) => {
+              const chapterNum = index + 1;
+              const existingChapter = t.chapters.find(c => c.number === chapterNum);
+              
+              if (!existingChapter) {
+                return { number: chapterNum, title, status: "locked" };
+              }
+              
+              // If the chapter exists but previous isn't approved, it's effectively locked
+              if (chapterNum > 1) {
+                const prevChapter = t.chapters.find(c => c.number === chapterNum - 1);
+                if (!prevChapter || prevChapter.status !== "approved") {
+                  return { number: chapterNum, title, status: "locked" };
+                }
+              }
+              
+              return { 
+                number: chapterNum, 
+                title, 
+                status: existingChapter.status,
+                deadline: existingChapter.deadline
+              };
+            });
+
             return (
-              <li key={t.id}>
+              <li key={t.id} className="space-y-4">
+                
+                {/* THESIS CARD */}
                 <div className={`block rounded-lg border p-5 shadow-sm transition-colors ${
                   isRejected 
                     ? "border-red-200 bg-red-50" 
@@ -157,7 +192,6 @@ export default function DashboardPage() {
                         Supervisor: <span className="font-medium">{t.supervisor?.full_name ?? "Unassigned"}</span>
                       </p>
                       
-                      {/* Show rejection reason if rejected */}
                       {isRejected && t.rejection_reason && (
                         <div className="mt-4 p-3 bg-white/60 rounded border border-red-200 text-sm text-red-800">
                           <strong>Reason for rejection:</strong> {t.rejection_reason}
@@ -174,7 +208,7 @@ export default function DashboardPage() {
                             e.preventDefault();
                             if (confirm("Are you sure? This will delete your rejected proposal so you can start fresh.")) {
                               await thesesApi.discard(t.id);
-                              window.location.reload(); // Refresh to show the "Submit Proposal" button
+                              window.location.reload();
                             }
                           }}
                           className="text-sm font-medium bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700"
@@ -192,10 +226,56 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* PROGRESS TRACKER (Only show if not rejected) */}
+                {!isRejected && (
+                  <div className="bg-white rounded-lg border border-pac-navy/10 p-5 shadow-sm">
+                    <h3 className="text-xs font-bold text-pac-navy/60 uppercase tracking-wider mb-4">
+                      Thesis Progress
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                      {tracker.map((ch) => {
+                        let bgColor = "bg-gray-100 text-gray-500 border-gray-200";
+                        let icon = "🔒";
+                        let subtext = "Locked";
+
+                        if (ch.status === "approved") {
+                          bgColor = "bg-emerald-50 text-emerald-800 border-emerald-200";
+                          icon = "✅";
+                          subtext = "Approved";
+                        } else if (ch.status === "submitted" || ch.status === "under_review") {
+                          bgColor = "bg-amber-50 text-amber-800 border-amber-200";
+                          icon = "⏳";
+                          subtext = "In Review";
+                        } else if (ch.status === "revisions") {
+                          bgColor = "bg-red-50 text-red-800 border-red-200";
+                          icon = "✏️";
+                          subtext = "Revisions";
+                        } else if (ch.status === "draft") {
+                          bgColor = "bg-blue-50 text-blue-800 border-blue-200";
+                          icon = "📝";
+                          subtext = "Drafting";
+                        }
+
+                        return (
+                          <div key={ch.number} className={`flex flex-col p-3 rounded-md border ${bgColor}`}>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className="text-sm">{icon}</span>
+                              <span className="text-xs font-bold uppercase tracking-wider">Ch {ch.number}</span>
+                            </div>
+                            <p className="text-xs font-medium line-clamp-1">{ch.title}</p>
+                            <p className="text-[10px] mt-1 opacity-80">{subtext}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
               </li>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );
