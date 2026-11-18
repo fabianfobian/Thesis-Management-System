@@ -405,10 +405,19 @@ export const commentsApi = {
 
 export const notificationsApi = {
   list: (headers?: Record<string, string>) => 
-    request<{ results: Notification[]; count: number }>("/notifications/", { headers }),
-    
+    request<{ results: Notification[] }>("/notifications/", { headers }),
+
+  listUnread: () => 
+    request<{ results: Notification[] }>("/notifications/?unread=true"),
+
   markAllRead: () =>
     request<{ status: string }>("/notifications/mark-all-read/", {
+      method: "PATCH",
+      csrf: true,
+    }),
+
+  markRead: (id: number) =>
+    request<Notification>(`/notifications/${id}/mark-read/`, {
       method: "PATCH",
       csrf: true,
     }),

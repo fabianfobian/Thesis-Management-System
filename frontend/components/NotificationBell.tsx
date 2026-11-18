@@ -93,6 +93,15 @@ export default function NotificationBell() {
               ))
             )}
           </div>
+          <div className="p-3 bg-pac-cream/50 border-t border-pac-navy/10 text-center">
+            <Link 
+              href="/notifications" 
+              onClick={() => setIsOpen(false)}
+              className="text-sm font-medium text-pac-navy hover:text-pac-gold"
+            >
+              View All Notifications
+            </Link>
+          </div>
         </div>
       )}
     </div>

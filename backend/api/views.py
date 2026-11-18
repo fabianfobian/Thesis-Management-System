@@ -470,7 +470,14 @@ class NotificationViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        queryset = Notification.objects.filter(recipient=self.request.user)
+
+        # allow filtering by unread status
+        unread_only = self.request.query_params.get("unread")
+        if unread_only == "true":
+            queryset = queryset.filter(is_read=False)
+            
+        return queryset
 
     @action(detail=True, methods=["patch"], url_path="mark-read")
     def mark_read(self, request, pk=None):
