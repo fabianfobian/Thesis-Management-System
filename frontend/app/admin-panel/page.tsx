@@ -80,6 +80,8 @@ export default function AdminPanelPage() {
   }
 
   if (loading) return <div className="p-8 text-center animate-pulse">Loading Admin Panel...</div>;
+  
+  if (!user) return null;
 
   return (
     <div className="space-y-6">
@@ -87,12 +89,16 @@ export default function AdminPanelPage() {
         <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold text-pac-navy">
           Admin Panel
         </h1>
-        <Link 
-          href="/admin-panel/users" 
-          className="bg-white border border-pac-navy/20 text-pac-navy px-4 py-2 rounded-md text-sm font-medium hover:bg-pac-cream transition-colors"
-        >
-          + Manage Users
-        </Link>
+
+        {/* Only ICT Superusers see the "Manage Users" button */}
+        {user.is_superuser && (
+          <Link 
+            href="/admin-panel/users" 
+            className="bg-white border border-pac-navy/20 text-pac-navy px-4 py-2 rounded-md text-sm font-medium hover:bg-pac-cream transition-colors"
+          >
+            + Manage Users
+          </Link>
+        )}
       </div>
       
       {theses.length === 0 ? (

@@ -50,6 +50,7 @@ export type User = {
   registration_number?:string;
   phone_number?:string;
   is_superuser: boolean;
+  groups?: string[];
   generated_password?: string;
 };
 

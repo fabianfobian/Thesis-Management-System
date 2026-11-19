@@ -52,7 +52,11 @@ export default function HeaderNav() {
       <nav className="hidden sm:flex items-center gap-4 text-sm font-medium">
         {user ? (
           <>
-            {user.role === "admin" && (
+            {/* Admin Panel Link (Only for Superusers) */}
+            {(
+              user.is_superuser || 
+              user.groups?.includes("Dean") || 
+              user.groups?.includes("HOD")) && (
               <>
                 <Link 
                   href="/admin-panel" 

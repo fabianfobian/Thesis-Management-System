@@ -323,9 +323,29 @@ function ThesisContent() {
                   </div>
 
                   {/* The Document Viewer */}
+                  {/* The Document Viewer (Full Screen Overlay) */}
                   {activeDoc && (
-                    <div className="mt-6 border-t border-pac-navy/10 pt-6">
-                      <div className="rounded-lg overflow-hidden border border-pac-navy/10 relative">
+                    <div className="fixed inset-0 z-50 flex flex-col bg-white">
+                      {/* Top Bar */}
+                      <div className="flex items-center justify-between px-6 py-4 border-b border-pac-navy/10 bg-pac-navy">
+                        <div>
+                          <h3 className="font-bold text-pac-navy text-lg">
+                            Document Viewer
+                          </h3>
+                          <p className="text-xs text-pac-navy/60">
+                            {activeDoc.name} • Version {activeDoc.version}
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => setActiveDoc(null)} 
+                          className="bg-pac-navy text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-pac-navyLight transition-colors"
+                        >
+                          Close Viewer
+                        </button>
+                      </div>
+
+                      {/* The Viewer */}
+                      <div className="flex-1 overflow-hidden">
                         <DocumentViewerToggle
                           fileUrl={activeDoc.url}
                           fileName={activeDoc.name}
@@ -334,18 +354,10 @@ function ThesisContent() {
                           onRefresh={refreshThesis}
                         />
                       </div>
-                      <div className="mt-3 text-right">
-                        <button 
-                          onClick={() => setActiveDoc(null)} 
-                          className="text-sm font-medium text-red-600 hover:text-red-700 hover:underline"
-                        >
-                          Close Viewer
-                        </button>
-                      </div>
                     </div>
                   )}
 
-                                    {/* GATEKEEPER: Upload Section */}
+                  {/* GATEKEEPER: Upload Section */}
                   {user.role === "student" && (
                     <div className="mt-4">
                       {chapter.number === 1 || 
