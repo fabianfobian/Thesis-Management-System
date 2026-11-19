@@ -4,7 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { commentsApi } from "@/lib/api";
 
-export default function CommentForm({ chapterId, versionId }: { chapterId: number, versionId?:number }) {
+export default function CommentForm({ 
+  chapterId, 
+  versionId, 
+  onCommentAdded,
+
+
+}: { 
+  chapterId: number, 
+  versionId?:number,
+  onCommentAdded?: () => void;
+}) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,8 +29,11 @@ export default function CommentForm({ chapterId, versionId }: { chapterId: numbe
 
     try {
       await commentsApi.create(chapterId, body, versionId);
-      setBody(""); // Clear form
-      router.refresh(); // Refresh server component to show new comment
+      setBody(""); 
+      if (onCommentAdded) {
+        onCommentAdded();
+      }
+      //router.refresh(); // Refresh server component to show new comment
     } catch (err) {
       setError((err as Error).message);
     } finally {

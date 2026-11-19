@@ -119,7 +119,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_groups(self, obj: User):
         return [g.name for g in obj.groups.all()]
-        
+
     def create(self, validated_data):
         # Generate a secure password if not provided
         password = validated_data.pop("password", None)
@@ -186,6 +186,7 @@ class CommentSerializer(serializers.ModelSerializer):
 # ---------------------------------------------------------------------------
 class ChapterVersionSerializer(serializers.ModelSerializer):
     document_url = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True, read_only= True)
 
     class Meta:
         model = ChapterVersion

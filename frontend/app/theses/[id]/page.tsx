@@ -311,7 +311,11 @@ function ThesisContent() {
                                 )}
                                 
                                 {(user.role === "supervisor" || user.role === "admin") && (
-                                  <CommentForm chapterId={chapter.id} versionId={v.id} />
+                                  <CommentForm 
+                                    chapterId={chapter.id} 
+                                    versionId={v.id} 
+                                    onCommentAdded={refreshThesis}
+                                  />
                                 )}
                               </div>
 
@@ -365,6 +369,12 @@ function ThesisContent() {
                         <UploadRevision 
                           chapterId={chapter.id} 
                           hasVersions={chapter.versions.length > 0}
+                          onUploadSuccess={() =>{
+                            // 1. Close the document viewer if it's open
+                            setActiveDoc(null);
+                            // 2. Refresh the thesis data (updates versions, progress, etc.)
+                            refreshThesis();
+                          }}
                         />
                       ) : (
                         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm flex items-center gap-2">

@@ -4,7 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { thesesApi } from "@/lib/api";
 
-export default function UploadRevision({ chapterId, hasVersions }: { chapterId: number, hasVersions: boolean }) {
+export default function UploadRevision({ 
+  chapterId, 
+  hasVersions, 
+  onUploadSuccess
+
+}: { 
+  chapterId: number, 
+  hasVersions: boolean, 
+  onUploadSuccess?: ()=> void; 
+}) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -23,6 +32,12 @@ export default function UploadRevision({ chapterId, hasVersions }: { chapterId: 
       await thesesApi.uploadVersion(chapterId, file);
       setFile(null);
       setSuccess(true);
+
+      // Call the parent's refresh function to update the thesis data
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
+
       setTimeout(() => {
         router.refresh();
       }, 1500);
@@ -64,10 +79,10 @@ export default function UploadRevision({ chapterId, hasVersions }: { chapterId: 
             hasVersions ? "bg-pac-navy hover:bg-pac-navyLight" : "bg-pac-gold hover:bg-pac-goldLight"
           }`}
         >
-          {uploading ? "Uploading..." : hasVersions ? "Upload Revision" : "Submit Chapter"}
+          {uploading ? "Uploading..." :success ? "uploaded!" : hasVersions ? "Upload Revision" : "Submit Chapter"}
         </button>
       </div>
-      
+
       {/* Error Message */}
       {error && <span className="text-sm text-red-600 block">{error}</span>}
       
