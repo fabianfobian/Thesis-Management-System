@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { commentsApi } from "@/lib/api";
 
-export default function CommentForm({ chapterId }: { chapterId: number }) {
+export default function CommentForm({ chapterId, versionId }: { chapterId: number, versionId?:number }) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export default function CommentForm({ chapterId }: { chapterId: number }) {
     setError(null);
 
     try {
-      await commentsApi.create(chapterId, body);
+      await commentsApi.create(chapterId, body, versionId);
       setBody(""); // Clear form
       router.refresh(); // Refresh server component to show new comment
     } catch (err) {

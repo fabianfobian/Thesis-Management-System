@@ -154,8 +154,19 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ["id", "chapter", "author", "body", "created_at"]
-        read_only_fields = ["id", "author", "created_at"]
+        fields = [
+            "id", 
+            "chapter",
+            "version", 
+            "author", 
+            "body", 
+            "created_at",
+        ]
+        read_only_fields = [
+            "id", 
+            "author", 
+            "created_at",
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +182,8 @@ class ChapterVersionSerializer(serializers.ModelSerializer):
             "version_number", 
             "document", 
             "document_url", 
-            "uploaded_at"
+            "uploaded_at",
+            "comments",
         ]
         read_only_fields = [
             "id", 

@@ -79,6 +79,7 @@ export type ChapterVersion = {
   document: string;
   document_url: string;
   uploaded_at: string;
+  comments: Comment[];
 };
 
 export type Chapter = {
@@ -394,10 +395,10 @@ export const usersApi = {
 };
 
 export const commentsApi = {
-  create: async (chapterId: number, body: string) => {
+  create: async (chapterId: number, body: string, versionId?: number) => {
     return request<Comment>("/comments/", {
       method: "POST",
-      body: { chapter: chapterId, body },
+      body: { chapter: chapterId, body, version: versionId },
       csrf: true, // Handles the CSRF token
     });
   },

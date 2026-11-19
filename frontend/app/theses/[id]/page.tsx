@@ -9,6 +9,7 @@ import StatusSelect from "@/components/StatusSelect";
 import UploadRevision from "@/components/UploadRevision";
 import CommentForm from "@/components/CommentForm";
 import DocumentViewerToggle from "@/components/DocumentViewerToggle";
+import { Download } from "lucide-react";
 
 export default function ThesisDetailPage() {
   return (
@@ -259,20 +260,61 @@ function ThesisContent() {
                         {chapter.versions.map((v) => {
                           const fileName = v.document_url?.split("?")[0].split("/").pop() || "document.pdf";
                           return (
-                            <li key={v.id} className="flex items-center justify-between text-sm bg-pac-cream/30 p-3 rounded">
-                              <div>
-                                <span className="font-medium text-pac-navy">Version {v.version_number}</span>
-                                <span className="text-pac-navy/50 text-xs ml-3">{new Date(v.uploaded_at).toLocaleDateString()}</span>
+                            <li key={v.id} className="flex flex-col text-sm bg-pac-cream/30 p-3 rounded mb-2">
+                              
+                              {/* Version Header */}
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="font-medium text-pac-navy">Version {v.version_number}</span>
+                                  <span className="text-pac-navy/50 text-xs ml-3">{new Date(v.uploaded_at).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  {/* Download Button */}
+                                  <a 
+                                    href={v.document_url!} 
+                                    download
+                                    className="text-pac-navy/60 hover:text-pac-navy transition-colors"
+                                    title="Download File"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </a>
+                                  <button 
+                                    onClick={() => {
+                                      setActiveDoc({ url: v.document_url!, name: fileName, version: v.version_number });
+                                      setActiveTab("document");
+                                    }}
+                                    className="text-pac-navy font-medium hover:text-pac-gold underline decoration-pac-gold/30"
+                                  >
+                                    View Document
+                                  </button>
+                                </div>
                               </div>
-                              <button 
-                                onClick={() => {
-                                  setActiveDoc({ url: v.document_url!, name: fileName, version: v.version_number });
-                                  setActiveTab("document");
-                                }}
-                                className="text-pac-navy font-medium hover:text-pac-gold underline decoration-pac-gold/30"
-                              >
-                                View Document
-                              </button>
+
+                              {/* Per-Version Comments */}
+                              <div className="mt-4 border-t border-pac-navy/10 pt-4 space-y-3">
+                                <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-2">
+                                  Feedback on Version {v.version_number}
+                                </h4>
+                                
+                                {v.comments.length === 0 ? (
+                                  <p className="text-sm text-pac-navy/50 italic">No feedback on this version yet.</p>
+                                ) : (
+                                  v.comments.map((comment) => (
+                                    <div key={comment.id} className="bg-white rounded-md p-3 text-sm border border-pac-navy/10">
+                                      <div className="flex justify-between items-baseline mb-1">
+                                        <span className="font-semibold text-pac-navy">{comment.author.full_name}</span>
+                                        <span className="text-xs text-pac-navy/50">{new Date(comment.created_at).toLocaleDateString()}</span>
+                                      </div>
+                                      <p className="text-pac-navy/80">{comment.body}</p>
+                                    </div>
+                                  ))
+                                )}
+                                
+                                {(user.role === "supervisor" || user.role === "admin") && (
+                                  <CommentForm chapterId={chapter.id} versionId={v.id} />
+                                )}
+                              </div>
+
                             </li>
                           );
                         })}
@@ -303,44 +345,22 @@ function ThesisContent() {
                     </div>
                   )}
 
-                  {/* GATEKEEPER: Upload Section */}
+                                    {/* GATEKEEPER: Upload Section */}
                   {user.role === "student" && (
                     <div className="mt-4">
-                      {chapter.number > 1 && 
-                       thesis.chapters.find(c => c.number === chapter.number - 1)?.status !== "approved" ? (
+                      {chapter.number === 1 || 
+                       thesis.chapters.find(c => c.number === chapter.number - 1)?.status === "approved" ? (
+                        <UploadRevision 
+                          chapterId={chapter.id} 
+                          hasVersions={chapter.versions.length > 0}
+                        />
+                      ) : (
                         <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-sm flex items-center gap-2">
                           🔒 You must get Chapter {chapter.number - 1} approved by your supervisor before you can upload Chapter {chapter.number}.
                         </div>
-                      ) : (
-                        <UploadRevision chapterId={chapter.id} />
                       )}
                     </div>
                   )}
-
-                  {/* Comments */}
-                  <div className="mt-6 pt-4 border-t border-pac-navy/10 space-y-3">
-                    <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-3">
-                      Feedback
-                    </h4>
-                    
-                    {chapter.comments.length === 0 ? (
-                      <p className="text-sm text-pac-navy/50 italic">No feedback yet.</p>
-                    ) : (
-                      chapter.comments.map((comment) => (
-                        <div key={comment.id} className="bg-pac-cream/50 rounded-md p-3 text-sm">
-                          <div className="flex justify-between items-baseline mb-1">
-                            <span className="font-semibold text-pac-navy">{comment.author.full_name}</span>
-                            <span className="text-xs text-pac-navy/50">{new Date(comment.created_at).toLocaleDateString()}</span>
-                          </div>
-                          <p className="text-pac-navy/80">{comment.body}</p>
-                        </div>
-                      ))
-                    )}
-
-                    {(user.role === "supervisor" || user.role === "admin") && (
-                      <CommentForm chapterId={chapter.id} />
-                    )}
-                  </div>
                 </div>
               </div>
             ))}

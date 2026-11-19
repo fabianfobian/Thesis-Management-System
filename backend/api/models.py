@@ -301,6 +301,13 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name="comments",
     )
+    version = models.ForeignKey(
+        "ChapterVersion", 
+        on_delete=models.CASCADE, 
+        related_name="comments", 
+        null=True, 
+        blank=True
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
