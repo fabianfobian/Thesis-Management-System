@@ -15,6 +15,7 @@ export default function AdminPanelPage() {
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectBox, setShowRejectBox] = useState<number | null>(null);
+  const [expandedThesisId, setExpandedThesisId] = useState<number | null>(null);
 
   const router = useRouter();
 
@@ -105,92 +106,112 @@ export default function AdminPanelPage() {
         <p className="text-pac-navy/60">No theses in the system yet.</p>
       ) : (
         <div className="space-y-4">
-                   {theses.map((thesis) => (
-            <div key={thesis.id} className="bg-white border border-pac-navy/10 rounded-lg p-6 shadow-sm">
-              
-              {/* Header: Title and Status */}
-              <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4">
-                <div>
-                  <h2 className="font-semibold text-pac-navy text-lg">{thesis.title}</h2>
-                  <p className="text-sm text-pac-navy/60 mt-1">
-                    Student: <span className="font-medium text-pac-navy">{thesis.student.full_name}</span> · 
-                    Dept: <span className="font-medium text-pac-navy">{thesis.student.department_details?.name || "Unknown"}</span>
-                  </p>
-                  <p className="text-xs text-pac-navy/40 mt-1">
-                    Submitted: {new Date(thesis.submitted_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <StatusBadge status={thesis.status} label={thesis.status_display} />
-              </div>
+          {theses.map((thesis) => {
+            const isExpanded = expandedThesisId === thesis.id;
 
-              {/* Abstract (The Context for the Decision) */}
-              {thesis.abstract && (
-                <div className="mb-4 p-4 bg-pac-cream/30 rounded-md border border-pac-navy/5">
-                  <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-1">Abstract</h4>
-                  <p className="text-sm text-pac-navy/80 leading-relaxed line-clamp-4">
-                    {thesis.abstract}
-                  </p>
+            return (
+              <div key={thesis.id} className="bg-white border border-pac-navy/10 rounded-lg p-6 shadow-sm transition-all">
+                
+                {/* Header / Clickable Area */}
+                <div 
+                  className="flex flex-col sm:flex-row items-start justify-between gap-4 cursor-pointer"
+                  onClick={() => setExpandedThesisId(isExpanded ? null : thesis.id)}
+                >
+                  <div>
+                    <h2 className="font-semibold text-pac-navy text-lg hover:text-pac-gold transition-colors">
+                      {thesis.title}
+                    </h2>
+                    <p className="text-sm text-pac-navy/60 mt-1">
+                      Student: <span className="font-medium text-pac-navy">{thesis.student.full_name}</span> · 
+                      Dept: <span className="font-medium text-pac-navy">{thesis.student.department_details?.name || "Unknown"}</span>
+                    </p>
+                    <p className="text-xs text-pac-navy/40 mt-1">
+                      Submitted: {new Date(thesis.submitted_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <StatusBadge status={thesis.status} label={thesis.status_display} />
+                    <span className="text-pac-navy/40 text-sm">
+                      {isExpanded ? "▲ Hide Details" : "▼ View Details"}
+                    </span>
+                  </div>
                 </div>
-              )}
-              
-              {/* REVIEW ACTIONS */}
-              {thesis.status === "proposal" && (
-                <div className="bg-pac-cream/30 p-4 rounded-md border border-pac-navy/10 space-y-3">
-                  <p className="text-sm font-medium text-pac-navy">Review Proposal</p>
-                  
-                  {showRejectBox === thesis.id ? (
-                    <div className="space-y-2">
-                      <textarea 
-                        className="w-full text-sm rounded border border-pac-navy/20 p-2 focus:ring-2 focus:ring-red-500 focus:outline-none"
-                        placeholder="Reason for rejection (e.g., Topic is too broad)..."
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                      />
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => handleReject(thesis.id)} 
-                          disabled={processingId === thesis.id} 
-                          className="bg-red-600 text-white text-sm px-4 py-1.5 rounded hover:bg-red-700 disabled:opacity-50"
-                        >
-                          {processingId === thesis.id ? "Rejecting..." : "Confirm Reject"}
-                        </button>
-                        <button 
-                          onClick={() => setShowRejectBox(null)} 
-                          className="text-sm text-pac-navy/60 hover:text-pac-navy"
-                        >
-                          Cancel
-                        </button>
+
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="mt-4 pt-4 border-t border-pac-navy/10 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* Abstract */}
+                    {thesis.abstract && (
+                      <div className="mb-4 p-4 bg-pac-cream/30 rounded-md border border-pac-navy/5">
+                        <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-2">Abstract</h4>
+                        <p className="text-sm text-pac-navy/80 leading-relaxed">
+                          {thesis.abstract}
+                        </p>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleApprove(thesis.id)} 
-                        disabled={processingId === thesis.id} 
-                        className="bg-emerald-600 text-white text-sm px-4 py-1.5 rounded hover:bg-emerald-700 disabled:opacity-50"
-                      >
-                        {processingId === thesis.id ? "Approving..." : "Approve Proposal"}
-                      </button>
-                      <button 
-                        onClick={() => setShowRejectBox(thesis.id)} 
-                        className="bg-red-50 text-red-600 border border-red-200 text-sm px-4 py-1.5 rounded hover:bg-red-100"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                    
+                    {/* Review Actions */}
+                    {thesis.status === "proposal" && (
+                      <div className="bg-pac-cream/30 p-4 rounded-md border border-pac-navy/10 space-y-3">
+                        <p className="text-sm font-medium text-pac-navy">Review Proposal</p>
+                        
+                        {showRejectBox === thesis.id ? (
+                          <div className="space-y-2">
+                            <textarea 
+                              className="w-full text-sm rounded border border-pac-navy/20 p-2 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                              placeholder="Reason for rejection (e.g., Topic is too broad)..."
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                            />
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleReject(thesis.id); }} 
+                                disabled={processingId === thesis.id} 
+                                className="bg-red-600 text-white text-sm px-4 py-1.5 rounded hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {processingId === thesis.id ? "Rejecting..." : "Confirm Reject"}
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setShowRejectBox(null); }} 
+                                className="text-sm text-pac-navy/60 hover:text-pac-navy"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleApprove(thesis.id); }} 
+                              disabled={processingId === thesis.id} 
+                              className="bg-emerald-600 text-white text-sm px-4 py-1.5 rounded hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                              {processingId === thesis.id ? "Approving..." : "Approve Proposal"}
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setShowRejectBox(thesis.id); }} 
+                              className="bg-red-50 text-red-600 border border-red-200 text-sm px-4 py-1.5 rounded hover:bg-red-100"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-              {/* COMMITTEE ASSIGNMENT (Only if approved) */}
-              {["in_progress", "under_review", "revisions", "approved", "defended"].includes(thesis.status) && (
-                <AssignCommitteeForm 
-                  thesis={thesis} 
-                  supervisors={supervisors} 
-                />
-              )}
-            </div>
-          ))} 
+                    {/* Committee Assignment */}
+                    {["in_progress", "under_review", "revisions", "approved", "defended"].includes(thesis.status) && (
+                      <AssignCommitteeForm 
+                        thesis={thesis} 
+                        supervisors={supervisors} 
+                      />
+                    )}
+                  </div>
+                )}
+
+              </div>
+            );
+          })} 
         </div>
       )}
     </div>
