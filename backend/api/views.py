@@ -49,7 +49,7 @@ class ThesisViewSet(viewsets.ModelViewSet):
         user = self.request.user
         base = (
             Thesis.objects
-            .select_related("student", "supervisor", "co_supervisor", "third_reader")
+            .select_related("student", "supervisor", "co_supervisor", "third_reader", "department__school")
             .prefetch_related(
                 Prefetch(
                     "chapters",
@@ -57,11 +57,41 @@ class ThesisViewSet(viewsets.ModelViewSet):
                 )
             )
         )
-        if user.role == User.Role.ADMIN:
+        # 1. ICT Superusers see EVERYTHING globally
+        if user.is_superuser:
             return base
+
+        # 2. Students see only their own thesis
+        if user.role == User.Role.STUDENT:
+            return base.filter(student=user)
+
+        # 3. Supervisors see only theses they are assigned to
         if user.role == User.Role.SUPERVISOR:
-            return base.filter(supervisor=user) | base.filter(co_supervisor=user) | base.filter(third_reader=user)
-        return base.filter(student=user)
+            return (
+                base.filter(supervisor=user) | 
+                base.filter(co_supervisor=user) | 
+                base.filter(third_reader=user)
+            )
+
+        # 4. Admins (HODs, Deans) - Apply strict scoping
+        if user.role == User.Role.ADMIN:
+            # If the admin has no department, they see nothing (safety)
+            if not user.department:
+                return base.none()
+
+            # Deans see all theses in their SCHOOL
+            if user.groups.filter(name="Dean").exists():
+                return base.filter(department__school=user.department.school)
+            
+            # HODs see only theses in their specific DEPARTMENT
+            if user.groups.filter(name="HOD").exists():
+                return base.filter(department=user.department)
+
+            # Fallback for other admin roles (e.g. Secretary): default to their department
+            return base.filter(department=user.department)
+
+        # Fallback (if role is unknown)
+        return base.none()
 
     def perform_create(self, serializer):
         user = self.request.user

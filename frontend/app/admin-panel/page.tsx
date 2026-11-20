@@ -105,42 +105,76 @@ export default function AdminPanelPage() {
         <p className="text-pac-navy/60">No theses in the system yet.</p>
       ) : (
         <div className="space-y-4">
-          {theses.map((thesis) => (
+                   {theses.map((thesis) => (
             <div key={thesis.id} className="bg-white border border-pac-navy/10 rounded-lg p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-4">
+              
+              {/* Header: Title and Status */}
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4">
                 <div>
                   <h2 className="font-semibold text-pac-navy text-lg">{thesis.title}</h2>
-                  <p className="text-sm text-pac-navy/60">Student: {thesis.student.full_name} · Dept: {thesis.department}</p>
+                  <p className="text-sm text-pac-navy/60 mt-1">
+                    Student: <span className="font-medium text-pac-navy">{thesis.student.full_name}</span> · 
+                    Dept: <span className="font-medium text-pac-navy">{thesis.student.department_details?.name || "Unknown"}</span>
+                  </p>
+                  <p className="text-xs text-pac-navy/40 mt-1">
+                    Submitted: {new Date(thesis.submitted_at).toLocaleDateString()}
+                  </p>
                 </div>
                 <StatusBadge status={thesis.status} label={thesis.status_display} />
               </div>
+
+              {/* Abstract (The Context for the Decision) */}
+              {thesis.abstract && (
+                <div className="mb-4 p-4 bg-pac-cream/30 rounded-md border border-pac-navy/5">
+                  <h4 className="text-xs font-semibold text-pac-navy/60 uppercase tracking-wider mb-1">Abstract</h4>
+                  <p className="text-sm text-pac-navy/80 leading-relaxed line-clamp-4">
+                    {thesis.abstract}
+                  </p>
+                </div>
+              )}
               
-              {/* 1. PROPOSAL REVIEW UI (Only if status is proposal) */}
+              {/* REVIEW ACTIONS */}
               {thesis.status === "proposal" && (
-                <div className="bg-pac-cream/30 p-4 rounded-md border border-pac-navy/10 space-y-3 mb-4">
+                <div className="bg-pac-cream/30 p-4 rounded-md border border-pac-navy/10 space-y-3">
                   <p className="text-sm font-medium text-pac-navy">Review Proposal</p>
                   
                   {showRejectBox === thesis.id ? (
                     <div className="space-y-2">
                       <textarea 
-                        className="w-full text-sm rounded border border-pac-navy/20 p-2"
+                        className="w-full text-sm rounded border border-pac-navy/20 p-2 focus:ring-2 focus:ring-red-500 focus:outline-none"
                         placeholder="Reason for rejection (e.g., Topic is too broad)..."
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
                       />
                       <div className="flex gap-2">
-                        <button onClick={() => handleReject(thesis.id)} disabled={processingId === thesis.id} className="bg-red-600 text-white text-sm px-4 py-1.5 rounded">
+                        <button 
+                          onClick={() => handleReject(thesis.id)} 
+                          disabled={processingId === thesis.id} 
+                          className="bg-red-600 text-white text-sm px-4 py-1.5 rounded hover:bg-red-700 disabled:opacity-50"
+                        >
                           {processingId === thesis.id ? "Rejecting..." : "Confirm Reject"}
                         </button>
-                        <button onClick={() => setShowRejectBox(null)} className="text-sm text-pac-navy/60 hover:text-pac-navy">Cancel</button>
+                        <button 
+                          onClick={() => setShowRejectBox(null)} 
+                          className="text-sm text-pac-navy/60 hover:text-pac-navy"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex gap-2">
-                      <button onClick={() => handleApprove(thesis.id)} disabled={processingId === thesis.id} className="bg-emerald-600 text-white text-sm px-4 py-1.5 rounded hover:bg-emerald-700">
+                      <button 
+                        onClick={() => handleApprove(thesis.id)} 
+                        disabled={processingId === thesis.id} 
+                        className="bg-emerald-600 text-white text-sm px-4 py-1.5 rounded hover:bg-emerald-700 disabled:opacity-50"
+                      >
                         {processingId === thesis.id ? "Approving..." : "Approve Proposal"}
                       </button>
-                      <button onClick={() => setShowRejectBox(thesis.id)} className="bg-red-50 text-red-600 border border-red-200 text-sm px-4 py-1.5 rounded hover:bg-red-100">
+                      <button 
+                        onClick={() => setShowRejectBox(thesis.id)} 
+                        className="bg-red-50 text-red-600 border border-red-200 text-sm px-4 py-1.5 rounded hover:bg-red-100"
+                      >
                         Reject
                       </button>
                     </div>
@@ -148,15 +182,15 @@ export default function AdminPanelPage() {
                 </div>
               )}
 
-              {/* 2. COMMITTEE ASSIGNMENT UI (Only if approved/in_progress) */}
-              {["in_progress", "under_review", "revisions", "approved", "defended"].includes(thesis.status)&& (
-                <AssignCommitteeForm  
+              {/* COMMITTEE ASSIGNMENT (Only if approved) */}
+              {["in_progress", "under_review", "revisions", "approved", "defended"].includes(thesis.status) && (
+                <AssignCommitteeForm 
                   thesis={thesis} 
                   supervisors={supervisors} 
                 />
               )}
             </div>
-          ))}
+          ))} 
         </div>
       )}
     </div>
