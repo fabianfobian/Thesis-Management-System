@@ -542,13 +542,23 @@ class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
 
 class UserViewSet(viewsets.ModelViewSet):
     """
-    CRUD for users. Only Superusers can create or edit users.
+    CRUD for users. 
+    - Anyone authenticated can LIST (to populate dropdowns).
+    - Only Superusers can create or edit users.
     """
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSuperuser]
+
+    def get_permissions(self):
+        if self.action in ["list", "retrieve"]:
+            # HODs, Deans, and Superusers can view the list
+            return [permissions.IsAuthenticated()]
+        # Only Superusers can create/edit/delete
+        return [permissions.IsAuthenticated(), IsSuperuser()]
 
     def get_queryset(self):
         queryset = User.objects.all().order_by("first_name")
+        
+        # If a role filter is passed (e.g., ?role=supervisor), apply it
         role = self.request.query_params.get("role")
         if role:
             queryset = queryset.filter(role=role)
